@@ -55,39 +55,44 @@
 .nav-item {
     display: flex;
     align-items: center;
-    padding: 0.75rem 1rem;
+    padding: 0.875rem 1rem;
     color: #64748b;
     text-decoration: none;
     border-radius: 0.5rem;
     margin-bottom: 0.25rem;
     font-weight: 500;
-    transition: all 0.2s;
+    transition: all 0.2s ease-in-out;
     cursor: pointer;
+    border-left: 3px solid transparent;
 }
 
 .nav-item:hover {
-    background-color: #f1f5f9;
-    color: #1e293b;
+    background-color: #f8fafc;
+    color: var(--primary-color);
+    transform: translateX(4px);
 }
 
 .nav-item.active {
     background-color: #eff6ff;
     color: var(--primary-color);
+    border-left-color: var(--primary-color);
+    font-weight: 600;
 }
 
 .nav-item .icon {
-    margin-right: 0.75rem;
-    font-size: 1.1rem;
+    margin-right: 0.875rem;
+    font-size: 1.25rem;
     width: 24px;
     text-align: center;
+    transition: color 0.2s;
 }
 
 .nav-divider {
-    margin: 1.5rem 0 0.5rem 1rem;
-    font-size: 0.75rem;
+    margin: 1.5rem 0 0.75rem 1rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
     color: #94a3b8;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.05em;
 }
 

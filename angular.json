@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "leaves-app": {
+    "myleaves": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -13,7 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/leaves-app",
+            "outputPath": "dist/myleaves",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -66,10 +66,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "leaves-app:build:production"
+              "buildTarget": "myleaves:build:production"
             },
             "development": {
-              "buildTarget": "leaves-app:build:development"
+              "buildTarget": "myleaves:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -77,7 +77,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "buildTarget": "leaves-app:build"
+            "buildTarget": "myleaves:build"
           }
         },
         "test": {
