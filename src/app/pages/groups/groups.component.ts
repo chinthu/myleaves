@@ -150,7 +150,7 @@ export class GroupsComponent implements OnInit {
   async loadGroupMembers(groupId: string) {
     // 1. Get User IDs in group
     const { data: memberData } = await this.supabase
-      .from('user_groups')
+      .from('group_members')
       .select('user_id')
       .eq('group_id', groupId);
 
@@ -163,7 +163,7 @@ export class GroupsComponent implements OnInit {
 
   async addMember(userId: string) {
     const { error } = await this.supabase
-      .from('user_groups')
+      .from('group_members')
       .insert({
         user_id: userId,
         group_id: this.selectedGroup.id
@@ -176,7 +176,7 @@ export class GroupsComponent implements OnInit {
 
   async removeMember(userId: string) {
     const { error } = await this.supabase
-      .from('user_groups')
+      .from('group_members')
       .delete()
       .eq('user_id', userId)
       .eq('group_id', this.selectedGroup.id);
