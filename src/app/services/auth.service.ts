@@ -33,12 +33,21 @@ export class AuthService {
     // Listen for auth changes
     this.supabase.auth.onAuthStateChange((event, session) => {
       console.log('AuthService: onAuthStateChange', event, session?.user?.email);
+
+      // Don't redirect if this is a password recovery event
+      if (event === 'PASSWORD_RECOVERY') {
+        // User clicked password reset link - stay on login page to collect new password
+        this._currentUser.next(session?.user ?? null);
+        return;
+      }
+
       if (event === 'SIGNED_IN' && session) {
         this._currentUser.next(session.user);
         this.loadUserProfile(session.user.id);
 
-        // Only redirect if we are not already on the home page to avoid loops or unnecessary navs
-        if (this.router.url === '/login') {
+        // Only redirect if not on login page with password reset params
+        const isPasswordReset = window.location.href.includes('type=recovery');
+        if (!isPasswordReset && this.router.url === '/login') {
           this.router.navigate(['/']);
         }
       } else if (event === 'SIGNED_OUT') {
@@ -73,6 +82,39 @@ export class AuthService {
       options: {
         emailRedirectTo: window.location.origin
       }
+    });
+  }
+
+  async signInWithPassword(email: string, password: string) {
+    return this.supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+  }
+
+  async signUp(email: string, password: string, fullName?: string) {
+    return this.supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName
+        }
+      }
+    });
+  }
+
+  async resetPassword(email: string) {
+    // Supabase will append #type=recovery&access_token=... to the redirect URL
+    // The login page will handle the URL params to show the reset password form
+    return this.supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`
+    });
+  }
+
+  async updatePassword(newPassword: string) {
+    return this.supabase.auth.updateUser({
+      password: newPassword
     });
   }
 

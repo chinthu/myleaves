@@ -112,25 +112,57 @@ export class UsersComponent implements OnInit {
         this.message = 'User updated successfully!';
 
       } else {
-        // Create New User (Requires Admin API or Supabase Function usually, but we'll try client-side signup for MVP if allowed, otherwise we need a backend function)
-        // NOTE: Client-side signUp signs in the user immediately, which is not what we want for an Admin creating a user.
-        // Ideally, we should use a Supabase Edge Function or Admin API.
-        // For this MVP, we will simulate it by inserting into public.users and assuming the auth user is created separately or we use a workaround.
-        // Workaround: We can't create Auth user from client side without logging out.
-        // So, we will just insert into public.users and let the user sign up themselves? No, that breaks the flow.
-        // We will use a placeholder message here.
+        // Create New User
+        // IMPORTANT: signUp() will log in the new user, so we need to save the current admin session first
 
-        // REAL IMPLEMENTATION: Call a Supabase Edge Function `create-user`
-        // For now, I'll throw an error explaining this limitation or just insert into public.users if Auth is handled externally.
+        // Step 1: Get current admin session
+        const { data: { session: adminSession } } = await this.supabase.auth.getSession();
 
-        // Let's try to just insert into public.users for now to show the UI working, 
-        // but in reality, we need the Auth ID.
+        if (!adminSession) {
+          throw new Error('Admin session not found. Please login again.');
+        }
 
-        throw new Error('Creating new users requires a backend function (Supabase Admin API). For this demo, please manually create the user in Supabase Auth and then they will appear here once they log in.');
+        // Step 2: Create the new user (this will log them in automatically)
+        const { data: authData, error: authError } = await this.authService.signUp(
+          this.formData.email,
+          this.formData.password,
+          this.formData.full_name
+        );
+
+        if (authError) throw authError;
+
+        // Step 3: Immediately restore admin session
+        const { error: sessionError } = await this.supabase.auth.setSession({
+          access_token: adminSession.access_token,
+          refresh_token: adminSession.refresh_token
+        });
+
+        if (sessionError) throw sessionError;
+
+        // Step 4: Update the newly created user's profile with role and designation
+        if (authData.user) {
+          // Wait a bit for the trigger to create the user record
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Update the user record with admin-specified role and designation
+          const { error: updateError } = await this.supabase
+            .from('users')
+            .update({
+              role: this.formData.role,
+              designation: this.formData.designation,
+              balance_casual: 20, // Default casual leave balance
+              balance_medical: 12  // Default medical leave balance
+            })
+            .eq('id', authData.user.id);
+
+          if (updateError) throw updateError;
+
+          this.message = 'User created successfully! They can now login with their email and password.';
+        }
       }
 
       this.loadUsers();
-      setTimeout(() => this.closeModal(), 1500);
+      setTimeout(() => this.closeModal(), 2000);
 
     } catch (err: any) {
       this.error = err.message || 'Operation failed.';
