@@ -34,10 +34,10 @@ jobs:
         run: npm run build -- --configuration production --base-href /${{ github.event.repository.name }}/
 
       - name: Add .nojekyll file
-        run: touch ./dist/leaves-app/browser/.nojekyll
+        run: touch ./dist/myleaves/browser/.nojekyll
 
       - name: Copy index.html to 404.html
-        run: cp ./dist/leaves-app/browser/index.html ./dist/leaves-app/browser/404.html
+        run: cp ./dist/myleaves/browser/index.html ./dist/myleaves/browser/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -45,7 +45,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist/leaves-app/browser'
+          path: './dist/myleaves/browser'
 
   deploy:
     environment:
