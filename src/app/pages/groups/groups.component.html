@@ -1,0 +1,85 @@
+<div class="groups-container">
+    <div class="header">
+        <h2>Group Management</h2>
+        <button class="btn-primary" (click)="openAddModal()">+ Add Group</button>
+    </div>
+
+    <div class="groups-grid">
+        <div class="group-card" *ngFor="let group of groups">
+            <div class="group-header">
+                <h3>{{ group.name }}</h3>
+                <div class="actions">
+                    <button class="btn-icon" (click)="openEditModal(group)" title="Edit Name">✏️</button>
+                    <button class="btn-icon" (click)="openMembersModal(group)" title="Manage Members">👥</button>
+                </div>
+            </div>
+            <div class="group-footer">
+                <button class="btn-link" (click)="openMembersModal(group)">Manage Members</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Group Modal -->
+    <div class="modal-overlay" *ngIf="showModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>{{ isEditing ? 'Edit Group' : 'Create New Group' }}</h3>
+                <button class="close-btn" (click)="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div *ngIf="message" class="alert alert-success">{{ message }}</div>
+                <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+                <form (ngSubmit)="saveGroup()">
+                    <div class="form-group">
+                        <label>Group Name</label>
+                        <input type="text" name="name" [(ngModel)]="formData.name" required
+                            placeholder="e.g. Engineering Team">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secondary" (click)="closeModal()">Cancel</button>
+                        <button type="submit" class="btn-primary" [disabled]="loading">
+                            {{ loading ? 'Saving...' : 'Save' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Members Modal -->
+    <div class="modal-overlay" *ngIf="showMembersModal">
+        <div class="modal members-modal">
+            <div class="modal-header">
+                <h3>Members: {{ selectedGroup?.name }}</h3>
+                <button class="close-btn" (click)="closeMembersModal()">&times;</button>
+            </div>
+            <div class="modal-body members-body">
+                <div class="members-lists">
+                    <!-- Current Members -->
+                    <div class="list-column">
+                        <h4>Current Members ({{ groupMembers.length }})</h4>
+                        <div class="user-list">
+                            <div class="user-item" *ngFor="let m of groupMembers">
+                                <span>{{ m.full_name }}</span>
+                                <button class="btn-sm btn-danger" (click)="removeMember(m.id)">Remove</button>
+                            </div>
+                            <div *ngIf="groupMembers.length === 0" class="empty-text">No members yet.</div>
+                        </div>
+                    </div>
+
+                    <!-- Available Users -->
+                    <div class="list-column">
+                        <h4>Add Members</h4>
+                        <div class="user-list">
+                            <div class="user-item" *ngFor="let u of nonMembers">
+                                <span>{{ u.full_name }}</span>
+                                <button class="btn-sm btn-success" (click)="addMember(u.id)">Add</button>
+                            </div>
+                            <div *ngIf="nonMembers.length === 0" class="empty-text">No more users to add.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

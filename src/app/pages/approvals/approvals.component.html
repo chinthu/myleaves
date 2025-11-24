@@ -1,0 +1,66 @@
+<div class="approvals-container">
+    <h2>Pending Approvals</h2>
+
+    <div class="approvals-container">
+        <div *ngIf="loading" class="loading">Loading...</div>
+
+        <div *ngIf="!loading && pendingLeaves.length === 0" class="empty-state">
+            <p>No pending approvals found.</p>
+        </div>
+
+        <div *ngIf="!loading && pendingLeaves.length > 0" class="approvals-container p-4">
+            <p-toast></p-toast>
+            <h2 class="mb-4 text-2xl font-bold text-900">Pending Approvals</h2>
+
+            <p-card>
+                <p-table [value]="pendingLeaves" [rows]="10" [paginator]="true" responsiveLayout="scroll">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Employee</th>
+                            <th>Type</th>
+                            <th>Dates</th>
+                            <th>Days</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-leave>
+                        <tr>
+                            <td>
+                                <div class="font-medium">{{ leave.users?.full_name || leave.users?.email }}</div>
+                            </td>
+                            <td>{{ leave.type }}</td>
+                            <td>
+                                {{ leave.start_date | date }}
+                                <span *ngIf="leave.start_date !== leave.end_date"> - {{ leave.end_date | date }}</span>
+                                <div *ngIf="leave.is_half_day" class="text-sm text-500">
+                                    {{ leave.half_day_slot === 'MORNING' ? 'First Half' : 'Second Half' }}
+                                </div>
+                            </td>
+                            <td>{{ leave.days_count }}</td>
+                            <td>{{ leave.reason }}</td>
+                            <td>
+                                <p-tag [value]="leave.status" [severity]="getSeverity(leave.status)"></p-tag>
+                            </td>
+                            <td>
+                                <div class="flex gap-2">
+                                    <p-button icon="pi pi-check"
+                                        styleClass="p-button-rounded p-button-success p-button-text"
+                                        (onClick)="updateStatus(leave.id, 'APPROVED')" pTooltip="Approve"></p-button>
+                                    <p-button icon="pi pi-times"
+                                        styleClass="p-button-rounded p-button-danger p-button-text"
+                                        (onClick)="updateStatus(leave.id, 'REJECTED')" pTooltip="Reject"></p-button>
+                                </div>
+                            </td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="7" class="text-center p-4">No pending approvals found.</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </p-card>
+        </div>
+    </div>

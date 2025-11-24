@@ -1,0 +1,108 @@
+<div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" [class.active]="sidebarOpen">
+        <div class="sidebar-header justify-content-between">
+            <div class="flex align-items-center">
+                <div class="logo-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                    </svg>
+                </div>
+                <span class="app-name">LeaveManager</span>
+            </div>
+            <button class="md:hidden p-link" (click)="toggleSidebar()">
+                <i class="pi pi-times text-xl"></i>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav" *ngIf="user">
+            <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item"
+                (click)="sidebarOpen = false">
+                <span class="icon">🏠</span> Dashboard
+            </a>
+            <a routerLink="/leaves/apply" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
+                <span class="icon">📝</span> Apply Leave
+            </a>
+
+            <!-- Approver Only -->
+            <a *ngIf="user.role === 'APPROVER' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'"
+                routerLink="/approvals" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
+                <span class="icon">✅</span> Approvals
+            </a>
+
+            <!-- HR Only -->
+            <a *ngIf="user.role === 'HR' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'"
+                routerLink="/hr-dashboard" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
+                <span class="icon">👥</span> HR Dashboard
+            </a>
+            <a *ngIf="user.role === 'HR' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'"
+                routerLink="/comp-offs" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
+                <span class="icon">🎁</span> Comp Offs
+            </a>
+
+            <!-- Admin Only -->
+            <div class="nav-divider" *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'">Admin</div>
+
+            <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'" routerLink="/users"
+                routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
+                <span class="icon">👤</span> Users
+            </a>
+            <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'" routerLink="/groups"
+                routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
+                <span class="icon">🏢</span> Groups
+            </a>
+
+            <!-- Super Admin Only -->
+            <a *ngIf="user.role === 'SUPER_ADMIN'" routerLink="/organizations" routerLinkActive="active"
+                class="nav-item" (click)="sidebarOpen = false">
+                <span class="icon">🌐</span> Organizations
+            </a>
+        </nav>
+        <div class="sidebar-nav flex flex-column gap-2 p-3" *ngIf="!user">
+            <!-- Simple Skeleton Loading State -->
+            <div class="h-2rem w-full bg-gray-100 border-round animate-pulse"></div>
+            <div class="h-2rem w-full bg-gray-100 border-round animate-pulse"></div>
+            <div class="h-2rem w-full bg-gray-100 border-round animate-pulse"></div>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="avatar">{{ user?.email?.charAt(0)?.toUpperCase() }}</div>
+                <div class="user-details">
+                    <span class="user-name">{{ user?.full_name || 'User' }}</span>
+                    <span class="user-role">{{ user?.role }}</span>
+                </div>
+            </div>
+            <button (click)="logout()" class="logout-btn" title="Logout">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                </svg>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Overlay for mobile -->
+    <div class="fixed inset-0 bg-black-alpha-50 z-5 md:hidden" *ngIf="sidebarOpen" (click)="sidebarOpen = false"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="topbar">
+            <div class="flex align-items-center gap-3">
+                <button class="p-link md:hidden" (click)="toggleSidebar()">
+                    <i class="pi pi-bars text-xl"></i>
+                </button>
+                <h1 class="page-title">Dashboard</h1>
+            </div>
+            <div class="topbar-actions">
+                <!-- Add notifications or other actions here -->
+            </div>
+        </header>
+        <div class="content-wrapper">
+            <router-outlet></router-outlet>
+        </div>
+    </main>
+</div>

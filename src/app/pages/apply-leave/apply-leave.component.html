@@ -1,0 +1,114 @@
+<div class="apply-leave-container p-4">
+    <p-toast></p-toast>
+    <p-card header="Apply for Leave" styleClass="w-full shadow-2">
+        <form (ngSubmit)="submitLeave()" class="flex flex-column gap-4">
+
+            <!-- Leave Type -->
+            <div class="flex flex-column gap-2">
+                <label class="font-bold text-900">Leave Type</label>
+                <div class="flex flex-wrap gap-4">
+                    <div class="field-radiobutton flex align-items-center">
+                        <p-radioButton name="leaveType" value="CASUAL" [(ngModel)]="leaveType"
+                            inputId="lt1"></p-radioButton>
+                        <label for="lt1" class="ml-2 cursor-pointer">Casual Leave</label>
+                    </div>
+                    <div class="field-radiobutton flex align-items-center">
+                        <p-radioButton name="leaveType" value="MEDICAL" [(ngModel)]="leaveType"
+                            inputId="lt2"></p-radioButton>
+                        <label for="lt2" class="ml-2 cursor-pointer">Medical Leave</label>
+                    </div>
+                    <div class="field-radiobutton flex align-items-center">
+                        <p-radioButton name="leaveType" value="COMP_OFF" [(ngModel)]="leaveType"
+                            inputId="lt3"></p-radioButton>
+                        <label for="lt3" class="ml-2 cursor-pointer">Comp Off</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Duration Type -->
+            <div class="flex flex-column gap-2">
+                <label class="font-bold text-900">Duration</label>
+                <div class="flex flex-wrap gap-4">
+                    <div class="field-radiobutton flex align-items-center">
+                        <p-radioButton name="duration" value="FULL_DAY" [(ngModel)]="duration" inputId="d1"
+                            (onClick)="calculateDays()"></p-radioButton>
+                        <label for="d1" class="ml-2 cursor-pointer">Full Day</label>
+                    </div>
+                    <div class="field-radiobutton flex align-items-center">
+                        <p-radioButton name="duration" value="HALF_DAY" [(ngModel)]="duration" inputId="d2"
+                            (onClick)="calculateDays()"></p-radioButton>
+                        <label for="d2" class="ml-2 cursor-pointer">Half Day</label>
+                    </div>
+                    <div class="field-radiobutton flex align-items-center">
+                        <p-radioButton name="duration" value="LONG_LEAVE" [(ngModel)]="duration" inputId="d3"
+                            (onClick)="calculateDays()"></p-radioButton>
+                        <label for="d3" class="ml-2 cursor-pointer">Long Leave</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Date Selection -->
+            <div *ngIf="duration === 'HALF_DAY'" class="grid formgrid">
+                <div class="col-12 md:col-6 flex flex-column gap-2">
+                    <label class="font-bold text-900">Select Date</label>
+                    <p-calendar [(ngModel)]="halfDayDate" name="halfDayDate" [showIcon]="true" dataType="string"
+                        dateFormat="yy-mm-dd" styleClass="w-full" inputStyleClass="w-full"></p-calendar>
+                </div>
+                <div class="col-12 md:col-6 flex flex-column gap-2">
+                    <label class="font-bold text-900">Select Slot</label>
+                    <p-dropdown
+                        [options]="[{label: 'Morning (First Half)', value: 'MORNING'}, {label: 'Afternoon (Second Half)', value: 'AFTERNOON'}]"
+                        [(ngModel)]="halfDaySlot" name="halfDaySlot" optionLabel="label" optionValue="value"
+                        styleClass="w-full" placeholder="Select Slot"></p-dropdown>
+                </div>
+            </div>
+
+            <div *ngIf="duration === 'FULL_DAY'" class="flex flex-column gap-2">
+                <label class="font-bold text-900">Select Date</label>
+                <p-calendar [(ngModel)]="startDate" name="startDate" [showIcon]="true" (onSelect)="calculateDays()"
+                    dataType="string" dateFormat="yy-mm-dd" styleClass="w-full" inputStyleClass="w-full"></p-calendar>
+            </div>
+
+            <div *ngIf="duration === 'LONG_LEAVE'" class="grid formgrid">
+                <div class="col-12 md:col-6 flex flex-column gap-2">
+                    <label class="font-bold text-900">Start Date</label>
+                    <p-calendar [(ngModel)]="startDate" name="startDate" [showIcon]="true" (onSelect)="calculateDays()"
+                        dataType="string" dateFormat="yy-mm-dd" styleClass="w-full"
+                        inputStyleClass="w-full"></p-calendar>
+                </div>
+                <div class="col-12 md:col-6 flex flex-column gap-2">
+                    <label class="font-bold text-900">End Date</label>
+                    <p-calendar [(ngModel)]="endDate" name="endDate" [showIcon]="true" (onSelect)="calculateDays()"
+                        dataType="string" dateFormat="yy-mm-dd" styleClass="w-full"
+                        inputStyleClass="w-full"></p-calendar>
+                </div>
+            </div>
+
+            <!-- Days Count Display -->
+            <div class="p-3 bg-blue-50 border-round text-blue-700 font-bold flex align-items-center">
+                <i class="pi pi-info-circle mr-2"></i>
+                <span>Total Days: {{ daysCount }}</span>
+            </div>
+
+            <!-- Reason -->
+            <div class="flex flex-column gap-2">
+                <label class="font-bold text-900">Reason</label>
+                <textarea pInputTextarea [(ngModel)]="reason" name="reason" rows="3"
+                    placeholder="Enter reason for leave" class="w-full"></textarea>
+            </div>
+
+            <!-- Approval Group -->
+            <div class="flex flex-column gap-2">
+                <label class="font-bold text-900">Assign to Approval Team</label>
+                <p-dropdown [options]="groups" [(ngModel)]="selectedGroupId" name="selectedGroupId" optionLabel="name"
+                    optionValue="id" placeholder="Select a group" styleClass="w-full"></p-dropdown>
+            </div>
+
+            <div class="flex justify-content-end gap-3 mt-4">
+                <p-button label="Cancel" styleClass="p-button-secondary p-button-outlined" routerLink="/"></p-button>
+                <p-button label="Submit Request" type="submit" [loading]="loading"></p-button>
+            </div>
+
+        </form>
+    </p-card>
+</div>

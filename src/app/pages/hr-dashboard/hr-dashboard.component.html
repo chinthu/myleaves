@@ -1,0 +1,61 @@
+<div class="hr-dashboard-container">
+    <h2>HR Overview</h2>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Employees</h3>
+            <div class="value">{{ totalUsers }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>On Leave Today</h3>
+            <div class="value">{{ leavesToday }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Pending Requests</h3>
+            <div class="value">{{ pendingRequests }}</div>
+        </div>
+    </div>
+
+    <div class="all-leaves-section">
+        <h3>Recent Leave Requests (All Users)</h3>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Type</th>
+                        <th>Dates</th>
+                        <th>Days</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let leave of allLeaves">
+                        <td>
+                            <div class="user-info">
+                                <span class="name">{{ leave.users?.full_name || 'Unknown' }}</span>
+                                <span class="email">{{ leave.users?.email }}</span>
+                            </div>
+                        </td>
+                        <td>{{ leave.type }}</td>
+                        <td>
+                            {{ leave.start_date | date }}
+                            <span *ngIf="leave.start_date !== leave.end_date"> - {{ leave.end_date | date }}</span>
+                        </td>
+                        <td>{{ leave.days_count }}</td>
+                        <td>
+                            <span class="status-badge" [ngClass]="{
+                    'status-approved': leave.status === 'APPROVED',
+                    'status-rejected': leave.status === 'REJECTED',
+                    'status-pending': leave.status === 'PENDING'
+                }">{{ leave.status }}</span>
+                        </td>
+                    </tr>
+                    <tr *ngIf="allLeaves.length === 0">
+                        <td colspan="5" class="text-center">No records found.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

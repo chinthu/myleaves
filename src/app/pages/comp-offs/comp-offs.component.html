@@ -1,0 +1,55 @@
+<div class="comp-offs-container">
+    <h2>Manage Comp Offs</h2>
+
+    <div *ngIf="message" class="alert alert-success">{{ message }}</div>
+    <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+    <div class="content-grid">
+        <!-- Form Section -->
+        <div class="form-card">
+            <h3>Create New Comp Off</h3>
+            <form (ngSubmit)="createCompOff()">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" name="title" [(ngModel)]="title" placeholder="e.g. Weekend Work" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" [(ngModel)]="description" rows="3"
+                        placeholder="Optional details"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Number of Days</label>
+                    <input type="number" name="days" [(ngModel)]="days" min="0.5" step="0.5" required>
+                </div>
+
+                <button type="submit" class="btn-primary" [disabled]="loading">
+                    {{ loading ? 'Creating...' : 'Create & Assign' }}
+                </button>
+            </form>
+        </div>
+
+        <!-- User Selection Section -->
+        <div class="users-card">
+            <h3>Select Employees</h3>
+            <div class="users-list">
+                <div *ngFor="let u of users" class="user-item" [class.selected]="selectedUserIds.includes(u.id)"
+                    (click)="toggleUserSelection(u.id)">
+                    <div class="checkbox">
+                        <input type="checkbox" [checked]="selectedUserIds.includes(u.id)" readonly>
+                    </div>
+                    <div class="user-info">
+                        <span class="name">{{ u.full_name || 'Unknown' }}</span>
+                        <span class="email">{{ u.email }}</span>
+                    </div>
+                </div>
+                <div *ngIf="users.length === 0" class="empty-text">No users found.</div>
+            </div>
+            <div class="selection-summary">
+                {{ selectedUserIds.length }} user(s) selected
+            </div>
+        </div>
+    </div>
+</div>
