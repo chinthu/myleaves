@@ -2,8 +2,7 @@
 
 ## Setup Instructions
 
-1. **Enable GitHub Pages** ..
-
+1. **Enable GitHub Pages**
    - Go to your repository Settings → Pages
    - Under "Build and deployment":
      - Source: **GitHub Actions** (NOT "Deploy from a branch")
