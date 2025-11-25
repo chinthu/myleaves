@@ -15,14 +15,14 @@
                 <div class="controls">
                     <div class="control-group" *ngIf="isSuperAdmin">
                         <label>Organization</label>
-                        <p-dropdown [options]="organizations" [(ngModel)]="selectedOrgId" optionLabel="name"
-                            optionValue="id" (onChange)="onOrgChange()" [style]="{'width':'200px'}"></p-dropdown>
+                        <ng-select [items]="organizations" [(ngModel)]="selectedOrgId" bindLabel="name"
+                            bindValue="id" (change)="onOrgChange()" [style]="{'width':'200px'}"></ng-select>
                     </div>
 
                     <div class="control-group">
                         <label>Year</label>
-                        <p-dropdown [options]="years" [(ngModel)]="settings.year" (onChange)="loadSettings()"
-                            [style]="{'width':'120px'}"></p-dropdown>
+                        <ng-select [items]="years" [(ngModel)]="settings.year" bindLabel="label" bindValue="value" (change)="loadSettings()"
+                            [style]="{'width':'120px'}"></ng-select>
                     </div>
                 </div>
             </div>

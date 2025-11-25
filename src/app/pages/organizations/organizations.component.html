@@ -1,66 +1,63 @@
-<div class="org-container">
-    <div class="header">
-        <h2>Organization Management</h2>
-        <button class="btn-primary" (click)="openAddModal()">+ Add Organization</button>
-    </div>
-
-    <div class="table-card">
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Domain</th>
-                        <th>Created At</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let org of organizations">
-                        <td>{{ org.name }}</td>
-                        <td>{{ org.domain }}</td>
-                        <td>{{ org.created_at | date }}</td>
-                        <td>
-                            <button class="btn-icon" (click)="openEditModal(org)">Edit</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+<div class="organizations-container">
+    <p-toast></p-toast>
+    <div class="header mb-4">
+        <div class="flex justify-content-between align-items-center">
+            <h2 class="m-0">Organization Management</h2>
+            <button pButton label="Add Organization" icon="pi pi-plus" (click)="openAddModal()"></button>
         </div>
     </div>
 
-    <!-- Modal -->
-    <div class="modal-overlay" *ngIf="showModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>{{ isEditing ? 'Edit Organization' : 'Add New Organization' }}</h3>
-                <button class="close-btn" (click)="closeModal()">&times;</button>
-            </div>
-
-            <div class="modal-body">
-                <div *ngIf="message" class="alert alert-success">{{ message }}</div>
-                <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-
-                <form (ngSubmit)="saveOrganization()">
-                    <div class="form-group">
-                        <label>Organization Name</label>
-                        <input type="text" name="name" [(ngModel)]="formData.name" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Domain</label>
-                        <input type="text" name="domain" [(ngModel)]="formData.domain" placeholder="e.g. acme.com"
-                            required>
-                    </div>
-
-                    <div class="modal-footer">
-                        <button type="button" class="btn-secondary" (click)="closeModal()">Cancel</button>
-                        <button type="submit" class="btn-primary" [disabled]="loading">
-                            {{ loading ? 'Saving...' : 'Save Organization' }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+    <div class="card">
+        <p-table [value]="organizations" [loading]="loading" [rows]="10" [paginator]="true" responsiveLayout="scroll"
+            [globalFilterFields]="['name', 'domain']">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+                    <th pSortableColumn="domain">Domain <p-sortIcon field="domain"></p-sortIcon></th>
+                    <th pSortableColumn="created_at">Created At <p-sortIcon field="created_at"></p-sortIcon></th>
+                    <th>Actions</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-org>
+                <tr>
+                    <td>{{ org.name }}</td>
+                    <td>{{ org.domain || '-' }}</td>
+                    <td>{{ org.created_at | date:'MMM d, y' }}</td>
+                    <td>
+                        <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text"
+                            (click)="openEditModal(org)" pTooltip="Edit Organization"></button>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="4" class="text-center p-4">No organizations found.</td>
+                </tr>
+            </ng-template>
+        </p-table>
     </div>
+
+    <!-- Dialog -->
+    <p-dialog [(visible)]="showModal" [header]="isEditing ? 'Edit Organization' : 'Add New Organization'" 
+        [modal]="true" [style]="{width: '450px'}" [draggable]="false" [resizable]="false" styleClass="p-fluid" (onHide)="closeModal()">
+        <form (ngSubmit)="saveOrganization()">
+            <div class="field">
+                <label for="name">Organization Name</label>
+                <input pInputText id="name" [(ngModel)]="formData.name" name="name" required />
+            </div>
+
+            <div class="field mt-3">
+                <label for="domain">Domain</label>
+                <input pInputText id="domain" [(ngModel)]="formData.domain" name="domain" 
+                    placeholder="e.g. acme.com" />
+            </div>
+
+            <ng-template pTemplate="footer">
+                <button pButton label="Cancel" icon="pi pi-times" class="p-button-text" 
+                    (click)="closeModal()" type="button"></button>
+                <button pButton label="Save" icon="pi pi-check" (click)="saveOrganization()" 
+                    [loading]="loading" type="submit"></button>
+            </ng-template>
+        </form>
+    </p-dialog>
 </div>

@@ -12,7 +12,7 @@ import { ButtonModule } from 'primeng/button';
 import { ChartModule } from 'primeng/chart';
 import { TagModule } from 'primeng/tag';
 import { CalendarModule } from 'primeng/calendar';
-import { DropdownModule } from 'primeng/dropdown';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextareaModule } from 'primeng/inputtextarea';
 import { TooltipModule } from 'primeng/tooltip';
@@ -35,7 +35,7 @@ import { takeUntil } from 'rxjs/operators';
     ChartModule,
     TagModule,
     CalendarModule,
-    DropdownModule,
+        NgSelectModule,
     DialogModule,
     InputTextareaModule,
     TooltipModule,

@@ -4,10 +4,10 @@
         <div class="flex justify-content-between align-items-center">
             <div class="flex gap-3 align-items-center">
                 <h2 class="m-0">Group Management</h2>
-                <p-dropdown *ngIf="isSuperAdmin" [options]="organizations" [(ngModel)]="selectedOrgId"
-                    optionLabel="name" optionValue="id" (onChange)="onOrgChange()" placeholder="Select Organization"
-                    styleClass="w-15rem">
-                </p-dropdown>
+                <ng-select *ngIf="isSuperAdmin" [items]="organizations" [(ngModel)]="selectedOrgId"
+                    bindLabel="name" bindValue="id" (change)="onOrgChange()" placeholder="Select Organization"
+                    [style]="{width: '15rem'}">
+                </ng-select>
             </div>
             <button pButton label="Add Group" icon="pi pi-plus" (click)="openAddModal()"></button>
         </div>
@@ -46,7 +46,7 @@
 
     <!-- Add/Edit Group Modal -->
     <p-dialog [(visible)]="showModal" [header]="isEditing ? 'Edit Group' : 'Create New Group'" [modal]="true"
-        [style]="{width: '400px'}" styleClass="p-fluid">
+        [style]="{width: '400px'}" [draggable]="false" [resizable]="false" styleClass="p-fluid">
         <div class="field">
             <label for="name">Group Name</label>
             <input pInputText id="name" [(ngModel)]="formData.name" required placeholder="e.g. Engineering Team" />
@@ -59,7 +59,7 @@
 
     <!-- Manage Members Modal -->
     <p-dialog [(visible)]="showMembersModal" [header]="'Members: ' + selectedGroup?.name" [modal]="true"
-        [style]="{width: '800px'}" styleClass="p-fluid">
+        [style]="{width: '800px'}" [draggable]="false" [resizable]="false" styleClass="p-fluid">
 
         <div class="grid">
             <div class="col-12 md:col-6">

@@ -51,7 +51,7 @@
 
     <!-- Add/Edit Modal -->
     <p-dialog [(visible)]="showModal" [header]="isEditing ? 'Edit Comp-Off' : 'Add Comp-Off'" [modal]="true"
-        [style]="{width: '500px'}" styleClass="p-fluid custom-modal">
+        [style]="{width: '500px'}" [draggable]="false" [resizable]="false" styleClass="p-fluid custom-modal">
         <div class="field" *ngIf="!isEditing">
             <label for="user" class="font-bold block mb-2">Select Employees</label>
             <p-multiSelect [options]="users" [(ngModel)]="formData.user_ids" optionLabel="full_name" optionValue="id"

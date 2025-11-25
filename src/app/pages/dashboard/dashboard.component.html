@@ -115,15 +115,15 @@
         <div class="section-header">
             <h2>Recent Leaves</h2>
             <div class="flex align-items-center gap-3">
-                <p-dropdown 
+                <ng-select 
                     [(ngModel)]="selectedYear" 
-                    [options]="availableYears"
-                    optionLabel="label"
-                    optionValue="value"
-                    (onChange)="onYearChange()"
+                    [items]="availableYears"
+                    bindLabel="label"
+                    bindValue="value"
+                    (change)="onYearChange()"
                     [style]="{width: '120px'}">
-                </p-dropdown>
-                <p-button label="Apply Leave" icon="pi pi-plus" routerLink="/leaves/apply"></p-button>
+                </ng-select>
+                <p-button *ngIf="!isViewingOtherUser" label="Apply Leave" icon="pi pi-plus" routerLink="/leaves/apply"></p-button>
             </div>
         </div>
         <p-toast></p-toast>
@@ -175,23 +175,27 @@
     </div>
 
     <!-- Edit Leave Dialog -->
-    <p-dialog 
-        [(visible)]="showEditDialog" 
-        [modal]="true" 
-        [style]="{width: '500px'}" 
-        header="Edit Leave"
-        [closable]="true"
-        (onHide)="closeEditDialog()">
+        <p-dialog 
+            [(visible)]="showEditDialog" 
+            [modal]="true" 
+            [style]="{width: '500px'}" 
+            [draggable]="false"
+            [resizable]="false"
+            header="Edit Leave"
+            [closable]="true"
+            (onHide)="closeEditDialog()">
         <div class="flex flex-column gap-3">
             <div>
                 <label class="block mb-2">Leave Type</label>
-                <p-dropdown 
+                <ng-select 
                     [(ngModel)]="editForm.type" 
-                    [options]="leaveTypes" 
-                    optionLabel="label" 
-                    optionValue="value"
+                    [items]="leaveTypes" 
+                    bindLabel="label" 
+                    bindValue="value"
+                    [clearable]="true"
+                    appendTo="body"
                     [style]="{width: '100%'}">
-                </p-dropdown>
+                </ng-select>
             </div>
             <div>
                 <label class="block mb-2">Start Date</label>
@@ -219,13 +223,15 @@
             </div>
             <div *ngIf="editForm.is_half_day">
                 <label class="block mb-2">Half Day Slot</label>
-                <p-dropdown 
+                <ng-select 
                     [(ngModel)]="editForm.half_day_slot" 
-                    [options]="halfDaySlots" 
-                    optionLabel="label" 
-                    optionValue="value"
+                    [items]="halfDaySlots" 
+                    bindLabel="label" 
+                    bindValue="value"
+                    [clearable]="true"
+                    appendTo="body"
                     [style]="{width: '100%'}">
-                </p-dropdown>
+                </ng-select>
             </div>
             <div>
                 <label class="block mb-2">Reason</label>
@@ -244,13 +250,15 @@
     </p-dialog>
 
     <!-- Cancel Leave Dialog -->
-    <p-dialog 
-        [(visible)]="showCancelDialog" 
-        [modal]="true" 
-        [style]="{width: '400px'}" 
-        header="Cancel Leave"
-        [closable]="true"
-        (onHide)="closeCancelDialog()">
+        <p-dialog 
+            [(visible)]="showCancelDialog" 
+            [modal]="true" 
+            [style]="{width: '400px'}" 
+            [draggable]="false"
+            [resizable]="false"
+            header="Cancel Leave"
+            [closable]="true"
+            (onHide)="closeCancelDialog()">
         <p>Are you sure you want to cancel this leave?</p>
         <div *ngIf="selectedLeave" class="mt-3 p-3 surface-ground border-round">
             <div><strong>Type:</strong> {{ selectedLeave.type }}</div>

@@ -7,10 +7,10 @@
                 <p *ngIf="isApprover" class="text-muted m-0" style="font-size: 0.875rem;">
                     Showing users from your approval groups
                 </p>
-                <p-dropdown *ngIf="isSuperAdmin" [options]="organizations" [(ngModel)]="selectedOrgId"
-                    optionLabel="name" optionValue="id" (onChange)="onOrgChange()" placeholder="Select Organization"
-                    styleClass="w-15rem">
-                </p-dropdown>
+                <ng-select *ngIf="isSuperAdmin" [items]="organizations" [(ngModel)]="selectedOrgId"
+                    bindLabel="name" bindValue="id" (change)="onOrgChange()" placeholder="Select Organization"
+                    [style]="{width: '15rem'}">
+                </ng-select>
             </div>
             <div class="flex gap-2 align-items-center">
                 <button pButton [label]="showLeaveStats ? 'Hide Leave Stats' : 'View Leave Stats'" 
@@ -28,14 +28,14 @@
     <div *ngIf="showLeaveStats" class="card mb-4">
         <div class="flex justify-content-between align-items-center mb-3">
             <h3 class="m-0">Leave Statistics ({{ selectedYear }})</h3>
-            <p-dropdown 
+            <ng-select 
                 [(ngModel)]="selectedYear" 
-                [options]="availableYears"
-                optionLabel="label"
-                optionValue="value"
-                (onChange)="onYearChange()"
+                [items]="availableYears"
+                bindLabel="label"
+                bindValue="value"
+                (change)="onYearChange()"
                 [style]="{width: '120px'}">
-            </p-dropdown>
+            </ng-select>
         </div>
         <p-table [value]="userLeaveStats" [loading]="loadingStats" [rows]="10" [paginator]="true" responsiveLayout="scroll">
             <ng-template pTemplate="header">
@@ -127,7 +127,7 @@
 
     <!-- Modal -->
     <p-dialog [(visible)]="showModal" [header]="isEditing ? 'Edit User' : 'Add New User'" [modal]="true"
-        [style]="{width: '450px'}" styleClass="p-fluid">
+        [style]="{width: '450px'}" [draggable]="false" [resizable]="false" styleClass="p-fluid">
 
         <div class="field">
             <label for="full_name">Full Name</label>
@@ -146,8 +146,8 @@
 
         <div class="field mt-3">
             <label for="role">Role</label>
-            <p-dropdown id="role" [options]="roles" [(ngModel)]="formData.role" placeholder="Select Role"
-                appendTo="body"></p-dropdown>
+            <ng-select id="role" [items]="roles" [(ngModel)]="formData.role" bindLabel="label" bindValue="value" 
+                [clearable]="true" placeholder="Select Role" appendTo="body"></ng-select>
         </div>
 
         <div class="field mt-3">

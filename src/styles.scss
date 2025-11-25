@@ -57,7 +57,7 @@ $shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.12);
 $shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.15);
 
 // Typography
-$font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+$font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 $font-size-xs: 11px;
 $font-size-sm: 13px;
 $font-size-base: 14px;
@@ -208,6 +208,10 @@ button {
     border: none !important;
     transition: all $transition-base !important;
     font-size: $font-size-base !important;
+    .pi{
+        font-size: 13px;
+       margin-right: 5px;
+    }
 }
 
 .p-button:not(.p-button-outlined):not(.p-button-text) {
@@ -270,6 +274,9 @@ button {
     box-shadow: 0 0 0 3px rgba(197, 255, 65, 0.1) !important;
 }
 
+.p-inputnumber-buttons-horizontal .p-button {
+    border-radius: 0 !important;
+}
 // Dropdown Overrides
 .p-dropdown {
     min-width: 180px;
@@ -308,6 +315,11 @@ button {
     padding: 14px 16px !important;
     border-bottom: 1px solid $border-color !important;
     border-top: none !important;
+    font-family: $font-family;
+    .p-sortable-column-icon{
+        width: 12px;
+        margin-top: -4px;
+    }
 }
 
 .p-datatable .p-datatable-tbody>tr {
@@ -315,15 +327,26 @@ button {
     transition: background-color $transition-fast;
 }
 
+// Alternate row colors (zebra striping)
+.p-datatable .p-datatable-tbody>tr:nth-child(even) {
+    background-color: #f8fcf0 !important;
+}
+
+.p-datatable .p-datatable-tbody>tr:nth-child(odd) {
+    background-color: #FFFFFF !important;
+}
+
 .p-datatable .p-datatable-tbody>tr>td {
-    padding: 14px 16px !important;
+    padding:5px 16px !important;
     color: $text-primary !important;
     font-size: $font-size-base !important;
+    font-family: $font-family;
+    font-weight: 500;
     border: none !important;
 }
 
 .p-datatable .p-datatable-tbody>tr:hover {
-    background-color: #FAFAFA !important;
+    background-color: #F5F5F5 !important;
 }
 
 .p-datatable .p-datatable-tbody>tr:last-child {
@@ -352,17 +375,42 @@ button {
 .p-dialog .p-dialog-header .p-dialog-header-icon {
     width: 2rem !important;
     height: 2rem !important;
+    background: transparent !important;
+    border: none !important;
     border-radius: $radius !important;
-    transition: all $transition-base !important;
+    color: #000000 !important;
+    transition: opacity $transition-base !important;
+    cursor: pointer !important;
 }
 
 .p-dialog .p-dialog-header .p-dialog-header-icon:hover {
-    background: $border-light !important;
+    background: transparent !important;
+    color: #000000 !important;
+    opacity: 0.7 !important;
+}
+
+.p-dialog .p-dialog-header .p-dialog-header-icon:focus {
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    color: #000000 !important;
+}
+
+// Disable dragging for all dialogs
+.p-dialog {
+    .p-dialog-header {
+        cursor: default !important;
+    }
 }
 
 .p-dialog .p-dialog-content {
     padding: $spacing-lg !important;
     background: $surface-color !important;
+    overflow: visible !important;
+}
+
+.p-dialog {
+    overflow: visible !important;
 }
 
 .p-dialog .p-dialog-footer {
@@ -401,6 +449,13 @@ button {
 .p-calendar .p-datepicker-trigger:hover {
     background: $border-color !important;
     color: $text-primary !important;
+}
+
+// Datepicker Popover - Max Width
+.p-datepicker.p-component {
+    min-width: 300px !important;
+    max-width: 300px !important;
+    width: 300px !important;
 }
 
 // Textarea Overrides
@@ -544,6 +599,7 @@ label {
 
 .ng-select {
     width: 100%;
+    font-size: $font-size-base !important;
 }
 
 .ng-select .ng-select-container {
@@ -551,6 +607,7 @@ label {
     border: 1px solid $border-color !important;
     min-height: 42px !important;
     transition: all $transition-base !important;
+    background: $surface-color !important;
 }
 
 .ng-select.ng-select-focused .ng-select-container {
@@ -564,41 +621,134 @@ label {
 
 .ng-select .ng-value-container {
     padding: 8px 12px !important;
+    padding-right: 40px !important;
+}
+
+.ng-select.ng-select-single .ng-value-container {
+    padding-right: 40px !important;
+}
+
+.ng-select.ng-select-single.ng-select-clearable .ng-value-container {
+    padding-right: 40px !important;
+}
+
+// Hide placeholder when value is selected
+.ng-select.ng-select-single.ng-has-value .ng-placeholder,
+.ng-select.ng-select-multiple.ng-has-value .ng-placeholder {
+    display: none !important;
 }
 
 .ng-select .ng-placeholder {
     color: $text-muted !important;
     font-size: $font-size-base !important;
+    opacity: 1 !important;
+}
+
+.ng-select .ng-has-value .ng-placeholder {
+    opacity: 0 !important;
 }
 
 .ng-select .ng-value {
     color: $text-primary !important;
     font-size: $font-size-base !important;
+    line-height: 1.5 !important;
 }
 
+.ng-select .ng-value-label {
+    display: inline-block !important;
+}
+
+// Clear button (close icon) styling
+.ng-select .ng-clear-wrapper {
+    color: $text-secondary !important;
+    cursor: pointer !important;
+    padding: 4px !important;
+    margin-right: -2px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 20px !important;
+    height: 40px !important;
+    border-radius: $radius-sm !important;
+    transition: all $transition-fast !important;
+}
+
+.ng-select .ng-clear-wrapper:hover {
+    color: $text-primary !important;
+    background: $border-light !important;
+}
+
+.ng-select .ng-clear {
+    font-size: 18px !important;
+    line-height: 1 !important;
+    display: block !important;
+}
+
+// Arrow wrapper
 .ng-select .ng-arrow-wrapper {
     padding-right: 8px !important;
+    width: 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 .ng-select .ng-arrow {
     border-color: $text-secondary transparent transparent !important;
+    border-width: 5px 5px 2.5px !important;
+    border-style: solid !important;
+    margin-top: 0 !important;
 }
 
 .ng-select.ng-select-opened .ng-arrow {
     border-color: transparent transparent $text-secondary !important;
+    border-width: 2.5px 5px 5px !important;
+    margin-top: -2px !important;
 }
 
+// Dropdown panel - ensure it's always visible
 .ng-dropdown-panel {
     border-radius: $radius !important;
     border: 1px solid $border-color !important;
     box-shadow: $shadow-md !important;
     background: $surface-color !important;
+    z-index: 10000 !important;
+    max-height: 300px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
 }
 
+// Ensure dropdown panel items container is visible
+.ng-dropdown-panel .ng-dropdown-panel-items {
+    max-height: 300px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    display: block !important;
+    visibility: visible !important;
+}
+
+// Ensure the items wrapper is visible
+.ng-dropdown-panel-items .ng-option {
+    display: block !important;
+    visibility: visible !important;
+}
+
+// Don't override positioning - let ng-select handle it completely
+// When appendTo="body" is used, ng-select sets inline styles dynamically
+// When not using appendTo, ng-select uses relative positioning
+
+// Options
 .ng-dropdown-panel .ng-option {
     padding: 10px 12px !important;
     color: $text-primary !important;
     transition: background-color $transition-fast !important;
+    cursor: pointer !important;
+    display: block !important;
+    white-space: nowrap !important;
 }
 
 .ng-dropdown-panel .ng-option:hover,
@@ -609,4 +759,175 @@ label {
 .ng-dropdown-panel .ng-option.ng-option-selected {
     background: rgba(197, 255, 65, 0.1) !important;
     color: $text-primary !important;
+    font-weight: $font-weight-medium !important;
 }
+
+.ng-dropdown-panel .ng-option.ng-option-selected.ng-option-marked {
+    background: rgba(197, 255, 65, 0.15) !important;
+}
+
+// Empty message
+.ng-dropdown-panel .ng-option.ng-option-disabled {
+    color: $text-muted !important;
+    cursor: default !important;
+}
+
+// Loading spinner
+.ng-select.ng-select-loading .ng-arrow-wrapper {
+    display: none !important;
+}
+
+.ng-select.ng-select-loading .ng-spinner-loader {
+    border-color: $text-secondary transparent transparent !important;
+}
+
+// Multiple select tags
+.ng-select.ng-select-multiple .ng-value-container .ng-value {
+    background: $border-light !important;
+    border-radius: $radius-sm !important;
+    padding: 2px 8px !important;
+    margin: 2px 4px 2px 0 !important;
+    font-size: $font-size-sm !important;
+}
+
+.ng-select.ng-select-multiple .ng-value-container .ng-value .ng-value-label {
+    display: inline-block !important;
+}
+
+.ng-select.ng-select-multiple .ng-value-container .ng-value .ng-value-icon {
+    padding-left: 6px !important;
+    cursor: pointer !important;
+    color: $text-secondary !important;
+}
+
+.ng-select.ng-select-multiple .ng-value-container .ng-value .ng-value-icon:hover {
+    color: $text-primary !important;
+}
+
+// Ensure input is visible
+.ng-select .ng-input {
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.ng-select .ng-input > input {
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+// Fix for single select value display
+.ng-select.ng-select-single .ng-select-container .ng-value-container .ng-value {
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    left: 12px !important;
+    right: 50px !important;
+}
+
+.ng-select.ng-select-single.ng-select-clearable .ng-select-container .ng-value-container .ng-value {
+    right: 50px !important;
+}
+
+// Multiselect Overrides - Remove focus styling and fix alignment
+.p-multiselect {
+    &:focus,
+    &.p-focus {
+        box-shadow: none !important;
+        border-color: $border-color !important;
+    }
+
+    .p-multiselect-label-container {
+        padding: 0.5rem 0.75rem !important;
+    }
+
+    .p-multiselect-trigger {
+        width: 2.5rem !important;
+    }
+}
+
+.p-multiselect-panel {
+    .p-multiselect-header {
+        padding: 0.75rem !important;
+        border-bottom: 1px solid $border-light !important;
+
+        .p-multiselect-filter-container {
+            width: 100% !important;
+
+            .p-inputtext {
+                width: 100% !important;
+                padding: 0.5rem 0.75rem !important;
+            }
+        }
+    }
+    .p-multiselect-header .p-multiselect-filter-container .p-multiselect-filter-icon {
+        display: none;
+    }
+    .p-multiselect-items-wrapper {
+        .p-multiselect-items {
+            padding: 0.25rem 0 !important;
+
+            .p-multiselect-item {
+                padding: 0.75rem 0.75rem !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+
+                &:focus {
+                    box-shadow: none !important;
+                    background-color: $border-light !important;
+                }
+
+                &.p-highlight {
+                    background-color: rgba(197, 255, 65, 0.1) !important;
+                    color: $text-primary !important;
+                }
+
+                &:hover {
+                    background-color: $border-light !important;
+                }
+            }
+        }
+    }
+}
+
+// Tooltip Overrides
+.p-tooltip {
+    .p-tooltip-text {
+        background-color: #000000 !important;
+        color: #FFFFFF !important;
+        font-size: 9px !important;
+        padding: 4px 8px !important;
+        border-radius: 4px !important;
+        font-family: $font-family !important;
+        font-weight: 400 !important;
+        line-height: 1.4 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .p-tooltip-arrow {
+        border-width: 4px !important;
+    }
+
+    // Arrow positioning and styling for different positions
+    &.p-tooltip-top .p-tooltip-arrow {
+        border-top-color: #000000 !important;
+        bottom: -4px !important;
+    }
+
+    &.p-tooltip-bottom .p-tooltip-arrow {
+        border-bottom-color: #000000 !important;
+        top: -4px !important;
+    }
+
+    &.p-tooltip-left .p-tooltip-arrow {
+        border-left-color: #000000 !important;
+        right: -4px !important;
+    }
+
+    &.p-tooltip-right .p-tooltip-arrow {
+        border-right-color: #000000 !important;
+        left: -4px !important;
+    }
+}
+

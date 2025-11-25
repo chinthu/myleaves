@@ -12,7 +12,7 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { CalendarModule } from 'primeng/calendar';
-import { DropdownModule } from 'primeng/dropdown';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { InputTextareaModule } from 'primeng/inputtextarea';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
@@ -31,7 +31,7 @@ import { SharedModule } from 'primeng/api';
     DialogModule,
     InputTextModule,
     CalendarModule,
-    DropdownModule,
+        NgSelectModule,
     ToastModule,
     TagModule
   ],
@@ -55,7 +55,7 @@ export class PublicHolidaysComponent implements OnInit, OnDestroy {
 
   // Filters
   selectedYear: number = new Date().getFullYear();
-  years: number[] = [];
+  years: any[] = [];
   private destroy$ = new Subject<void>();
 
   // Organization Filter (Super Admin)
@@ -75,10 +75,11 @@ export class PublicHolidaysComponent implements OnInit, OnDestroy {
   ) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
 
-    // Generate years (current - 1 to current + 2)
+    // Generate years (current - 1 to current + 2) as objects for ng-select
     const currentYear = new Date().getFullYear();
     for (let i = -1; i <= 2; i++) {
-      this.years.push(currentYear + i);
+      const year = currentYear + i;
+      this.years.push({ label: year.toString(), value: year });
     }
   }
 

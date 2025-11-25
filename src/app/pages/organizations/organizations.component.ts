@@ -5,11 +5,28 @@ import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../services/auth.service';
 import { Subject, takeUntil } from 'rxjs';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-organizations',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule, 
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    DialogModule,
+    InputTextModule,
+    ToastModule,
+    TooltipModule
+  ],
+  providers: [MessageService],
   templateUrl: './organizations.component.html',
   styleUrls: ['./organizations.component.scss']
 })
@@ -33,7 +50,10 @@ export class OrganizationsComponent implements OnInit, OnDestroy {
   error = '';
   private destroy$ = new Subject<void>();
 
-  constructor(private authService: AuthService) {
+  constructor(
+    private authService: AuthService,
+    private messageService: MessageService
+  ) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
 
@@ -97,20 +117,32 @@ export class OrganizationsComponent implements OnInit, OnDestroy {
           })
           .eq('id', this.formData.id);
         if (error) throw error;
-        this.message = 'Organization updated successfully!';
+        this.messageService.add({ 
+          severity: 'success', 
+          summary: 'Success', 
+          detail: 'Organization updated successfully!' 
+        });
       } else {
         const { error } = await this.supabase
           .from('organizations')
           .insert(this.formData);
         if (error) throw error;
-        this.message = 'Organization created successfully!';
+        this.messageService.add({ 
+          severity: 'success', 
+          summary: 'Success', 
+          detail: 'Organization created successfully!' 
+        });
       }
 
       this.loadOrganizations();
       setTimeout(() => this.closeModal(), 1500);
 
     } catch (err: any) {
-      this.error = err.message || 'Operation failed.';
+      this.messageService.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: err.message || 'Operation failed.' 
+      });
     } finally {
       this.loading = false;
     }

@@ -9,7 +9,7 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-import { DropdownModule } from 'primeng/dropdown';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { ToastModule } from 'primeng/toast';
 import { MessageService, SharedModule } from 'primeng/api';
 import { PickListModule } from 'primeng/picklist';
@@ -25,7 +25,7 @@ import { TooltipModule } from 'primeng/tooltip';
     ButtonModule,
     DialogModule,
     InputTextModule,
-    DropdownModule,
+        NgSelectModule,
     ToastModule
   ],
   providers: [MessageService],

@@ -108,8 +108,8 @@
                 <p-calendar [(ngModel)]="dateRange" selectionMode="range" [readonlyInput]="true"
                     placeholder="Date Range" (onSelect)="onFilterChange()"></p-calendar>
 
-                <p-dropdown [options]="statusOptions" [(ngModel)]="selectedStatus" optionLabel="label"
-                    optionValue="value" (onChange)="onFilterChange()" placeholder="Status"></p-dropdown>
+                <ng-select [items]="statusOptions" [(ngModel)]="selectedStatus" bindLabel="label"
+                    bindValue="value" (change)="onFilterChange()" placeholder="Status"></ng-select>
 
                 <p-button label="Clear" icon="pi pi-filter-slash" styleClass="p-button-outlined"
                     (onClick)="clearFilters()"></p-button>
@@ -183,20 +183,24 @@
 <p-dialog 
     [(visible)]="showEditDialog" 
     [modal]="true" 
-    [style]="{width: '500px'}" 
+    [style]="{width: '500px'}"
+    [draggable]="false"
+    [resizable]="false" 
     header="Edit Leave"
     [closable]="true"
     (onHide)="closeEditDialog()">
     <div class="flex flex-column gap-3">
         <div>
             <label class="block mb-2">Leave Type</label>
-            <p-dropdown 
+            <ng-select 
                 [(ngModel)]="editForm.type" 
-                [options]="leaveTypes" 
-                optionLabel="label" 
-                optionValue="value"
+                [items]="leaveTypes" 
+                bindLabel="label" 
+                bindValue="value"
+                [clearable]="true"
+                appendTo="body"
                 [style]="{width: '100%'}">
-            </p-dropdown>
+            </ng-select>
         </div>
         <div>
             <label class="block mb-2">Start Date</label>
@@ -224,13 +228,15 @@
         </div>
         <div *ngIf="editForm.is_half_day">
             <label class="block mb-2">Half Day Slot</label>
-            <p-dropdown 
+            <ng-select 
                 [(ngModel)]="editForm.half_day_slot" 
-                [options]="halfDaySlots" 
-                optionLabel="label" 
-                optionValue="value"
+                [items]="halfDaySlots" 
+                bindLabel="label" 
+                bindValue="value"
+                [clearable]="true"
+                appendTo="body"
                 [style]="{width: '100%'}">
-            </p-dropdown>
+            </ng-select>
         </div>
         <div>
             <label class="block mb-2">Reason</label>

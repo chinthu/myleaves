@@ -11,7 +11,6 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { CalendarModule } from 'primeng/calendar';
 import { InputTextareaModule } from 'primeng/inputtextarea';
-import { DropdownModule } from 'primeng/dropdown';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
@@ -28,7 +27,6 @@ import { TooltipModule } from 'primeng/tooltip';
     DialogModule,
     CalendarModule,
     InputTextareaModule,
-    DropdownModule,
     MultiSelectModule,
     TagModule,
     TooltipModule

@@ -56,10 +56,11 @@
                 </div>
                 <div class="col-12 md:col-6 flex flex-column gap-2">
                     <label class="font-bold text-900">Select Slot</label>
-                    <p-dropdown
-                        [options]="[{label: 'Morning (First Half)', value: 'MORNING'}, {label: 'Afternoon (Second Half)', value: 'AFTERNOON'}]"
-                        [(ngModel)]="halfDaySlot" name="halfDaySlot" optionLabel="label" optionValue="value"
-                        styleClass="w-full" placeholder="Select Slot"></p-dropdown>
+                    <ng-select
+                        [items]="[{label: 'Morning (First Half)', value: 'MORNING'}, {label: 'Afternoon (Second Half)', value: 'AFTERNOON'}]"
+                        [(ngModel)]="halfDaySlot" name="halfDaySlot" bindLabel="label" bindValue="value"
+                        [clearable]="true"
+                        [style]="{width: '100%'}" placeholder="Select Slot"></ng-select>
                 </div>
             </div>
 
@@ -100,8 +101,8 @@
             <!-- Approval Group -->
             <div class="flex flex-column gap-2">
                 <label class="font-bold text-900">Assign to Approval Team</label>
-                <p-dropdown [options]="groups" [(ngModel)]="selectedGroupId" name="selectedGroupId" optionLabel="name"
-                    optionValue="id" placeholder="Select a group" styleClass="w-full"></p-dropdown>
+                <ng-select [items]="groups" [(ngModel)]="selectedGroupId" name="selectedGroupId" bindLabel="name"
+                    bindValue="id" [clearable]="true" placeholder="Select a group" [style]="{width: '100%'}"></ng-select>
             </div>
 
             <div class="flex justify-content-end gap-3 mt-4">

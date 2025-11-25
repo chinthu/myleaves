@@ -7,13 +7,13 @@
             <p class="text-muted">Manage organization public holidays</p>
         </div>
         <div class="flex gap-3 align-items-center">
-            <p-dropdown *ngIf="user?.role === 'SUPER_ADMIN'" [options]="organizations" [(ngModel)]="selectedOrgId"
-                optionLabel="name" optionValue="id" (onChange)="onOrgChange()" placeholder="Select Organization"
-                styleClass="w-15rem">
-            </p-dropdown>
-            <p-dropdown [options]="years" [(ngModel)]="selectedYear" (onChange)="onYearChange()"
-                placeholder="Select Year" styleClass="year-dropdown">
-            </p-dropdown>
+            <ng-select *ngIf="user?.role === 'SUPER_ADMIN'" [items]="organizations" [(ngModel)]="selectedOrgId"
+                bindLabel="name" bindValue="id" (change)="onOrgChange()" placeholder="Select Organization"
+                [style]="{width: '15rem'}">
+            </ng-select>
+            <ng-select [items]="years" [(ngModel)]="selectedYear" bindLabel="label" bindValue="value" (change)="onYearChange()"
+                placeholder="Select Year" [style]="{width: '150px'}">
+            </ng-select>
             <p-button *ngIf="canManage" label="Add Holiday" icon="pi pi-plus" (onClick)="openAddDialog()"></p-button>
         </div>
     </div>
@@ -90,8 +90,8 @@
 
         <div class="flex flex-column gap-2">
             <label for="type" class="font-semibold">Type *</label>
-            <p-dropdown id="type" [options]="holidayTypes" [(ngModel)]="currentHoliday.type" optionLabel="label"
-                optionValue="value" placeholder="Select Type" appendTo="body"></p-dropdown>
+            <ng-select id="type" [items]="holidayTypes" [(ngModel)]="currentHoliday.type" bindLabel="label"
+                bindValue="value" [clearable]="true" placeholder="Select Type" appendTo="body"></ng-select>
         </div>
 
         <div class="flex flex-column gap-2">

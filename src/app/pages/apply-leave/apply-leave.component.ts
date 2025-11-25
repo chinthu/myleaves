@@ -8,7 +8,7 @@ import { Router, RouterLink } from '@angular/router';
 import { LeaveService } from '../../services/leave.service';
 
 import { CalendarModule } from 'primeng/calendar';
-import { DropdownModule } from 'primeng/dropdown';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { InputTextareaModule } from 'primeng/inputtextarea';
 import { ToastModule } from 'primeng/toast';
@@ -20,7 +20,7 @@ import { Subject, takeUntil } from 'rxjs';
 @Component({
   selector: 'app-apply-leave',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, CalendarModule, DropdownModule, RadioButtonModule, InputTextareaModule, ToastModule, ButtonModule, CardModule],
+  imports: [CommonModule, FormsModule, RouterLink, CalendarModule, NgSelectModule, RadioButtonModule, InputTextareaModule, ToastModule, ButtonModule, CardModule],
   templateUrl: './apply-leave.component.html',
   styleUrls: ['./apply-leave.component.scss'],
   providers: [MessageService]

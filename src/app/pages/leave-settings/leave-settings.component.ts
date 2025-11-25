@@ -9,7 +9,7 @@ import { ToastModule } from 'primeng/toast';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { DropdownModule } from 'primeng/dropdown';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { LoadingService } from '../../services/loading.service';
@@ -26,7 +26,7 @@ import { takeUntil } from 'rxjs/operators';
     CardModule,
     ButtonModule,
     InputNumberModule,
-    DropdownModule,
+        NgSelectModule,
     ConfirmDialogModule
   ],
   providers: [MessageService, ConfirmationService],
