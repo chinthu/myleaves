@@ -1,17 +1,20 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../services/auth.service';
-
-import { TableModule } from 'primeng/table';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import { CardModule } from 'primeng/card';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { ChartModule } from 'primeng/chart';
 import { TagModule } from 'primeng/tag';
 import { CalendarModule } from 'primeng/calendar';
 import { DropdownModule } from 'primeng/dropdown';
-import { ButtonModule } from 'primeng/button';
-import { ChartModule } from 'primeng/chart';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-hr-dashboard',
@@ -19,21 +22,24 @@ import { ChartModule } from 'primeng/chart';
   imports: [
     CommonModule,
     FormsModule,
-    TableModule,
+    ToastModule,
     CardModule,
+    TableModule,
+    ButtonModule,
+    ChartModule,
     TagModule,
     CalendarModule,
-    DropdownModule,
-    ButtonModule,
-    ChartModule
+    DropdownModule
   ],
+  providers: [MessageService],
   templateUrl: './hr-dashboard.component.html',
   styleUrls: ['./hr-dashboard.component.scss']
 })
-export class HrDashboardComponent implements OnInit {
+export class HrDashboardComponent implements OnInit, OnDestroy {
   supabase: SupabaseClient;
   user: any = null;
   loading = true;
+  private destroy$ = new Subject<void>();
 
   // Today's Leaves
   todaysLeaves: any[] = [];
@@ -68,12 +74,16 @@ export class HrDashboardComponent implements OnInit {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
 
-  async ngOnInit() {
-    this.user = await this.authService.getUserProfile();
-    if (this.user) {
-      await this.loadDashboardData();
-      this.setupCharts();
-    }
+  ngOnInit() {
+    this.authService.userProfile$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(async (userProfile) => {
+        if (userProfile) {
+          this.user = userProfile;
+          await this.loadDashboardData();
+          this.setupCharts();
+        }
+      });
   }
 
   async loadDashboardData() {
@@ -270,5 +280,10 @@ export class HrDashboardComponent implements OnInit {
       case 'COMP_OFF': return 'badge-compoff';
       default: return '';
     }
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

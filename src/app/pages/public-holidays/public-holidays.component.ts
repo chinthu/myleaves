@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../services/auth.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -37,7 +39,7 @@ import { SharedModule } from 'primeng/api';
   styleUrls: ['./public-holidays.component.scss'],
   providers: [MessageService]
 })
-export class PublicHolidaysComponent implements OnInit {
+export class PublicHolidaysComponent implements OnInit, OnDestroy {
   supabase: SupabaseClient;
   user: any = null;
   canManage = false;
@@ -54,6 +56,7 @@ export class PublicHolidaysComponent implements OnInit {
   // Filters
   selectedYear: number = new Date().getFullYear();
   years: number[] = [];
+  private destroy$ = new Subject<void>();
 
   // Organization Filter (Super Admin)
   organizations: any[] = [];
@@ -79,17 +82,23 @@ export class PublicHolidaysComponent implements OnInit {
     }
   }
 
-  async ngOnInit() {
-    this.user = await this.authService.getUserProfile();
-    this.canManage = ['HR', 'ADMIN', 'SUPER_ADMIN'].includes(this.user?.role);
+  ngOnInit() {
+    this.authService.userProfile$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(async (userProfile) => {
+        if (userProfile) {
+          this.user = userProfile;
+          this.canManage = ['HR', 'ADMIN', 'SUPER_ADMIN'].includes(this.user?.role);
 
-    if (this.user?.role === 'SUPER_ADMIN') {
-      await this.loadOrganizations();
-    } else {
-      this.selectedOrgId = this.user.organization_id;
-    }
+          if (this.user?.role === 'SUPER_ADMIN') {
+            await this.loadOrganizations();
+          } else {
+            this.selectedOrgId = this.user.organization_id;
+          }
 
-    this.loadHolidays();
+          this.loadHolidays();
+        }
+      });
   }
 
   async loadOrganizations() {
@@ -271,5 +280,10 @@ export class PublicHolidaysComponent implements OnInit {
 
   formatDate(date: Date): string {
     return date.toISOString().split('T')[0];
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

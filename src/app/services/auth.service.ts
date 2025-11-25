@@ -44,13 +44,17 @@ export class AuthService {
 
       if (event === 'SIGNED_IN' && session) {
         this._currentUser.next(session.user);
-        this.loadUserProfile(session.user.id);
-
-        // Only redirect if not on login page with password reset params
-        const isPasswordReset = window.location.href.includes('type=recovery');
-        if (!isPasswordReset && this.router.url === '/login') {
-          this.router.navigate(['/']);
-        }
+        // Wait for profile to determine redirection
+        this.loadUserProfile(session.user.id).then(profile => {
+          const isPasswordReset = window.location.href.includes('type=recovery');
+          if (!isPasswordReset && this.router.url === '/login') {
+            if (profile?.role === 'SUPER_ADMIN' || profile?.role === 'HR') {
+              this.router.navigate(['/hr-dashboard']);
+            } else {
+              this.router.navigate(['/']);
+            }
+          }
+        });
       } else if (event === 'SIGNED_OUT') {
         this._currentUser.next(null);
         this._userProfile.next(null); // Clear profile

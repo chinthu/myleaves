@@ -9,6 +9,8 @@ import { TableModule } from 'primeng/table';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
@@ -34,14 +36,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // Realtime subscriptions
   private leavesChannel: any;
   private userChannel: any;
+  private destroy$ = new Subject<void>();
 
   constructor(private authService: AuthService) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
-  }
-
-  ngOnInit() {
-    this.loadUserData();
-    this.setupSubscriptions();
   }
 
   setupSubscriptions() {
@@ -53,7 +51,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         (payload) => {
           console.log('Leave change detected:', payload);
           this.loadLeaves();
-          this.loadUserData(); // Reload user data to get updated balances
         }
       )
       .subscribe();
@@ -74,14 +71,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .subscribe();
   }
 
-  async loadUserData() {
-    this.user = await this.authService.getUserProfile();
-    if (this.user) {
-      this.casualBalance = this.user.balance_casual;
-      this.medicalBalance = this.user.balance_medical;
-      await this.loadCompOffs();
-      this.loadLeaves();
-    }
+  ngOnInit() {
+    this.authService.userProfile$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((userProfile) => {
+        if (userProfile) {
+          this.user = userProfile;
+          this.casualBalance = this.user.balance_casual;
+          this.medicalBalance = this.user.balance_medical;
+          this.loadCompOffs();
+          this.loadLeaves();
+          // Only setup subscriptions once user is loaded
+          if (!this.leavesChannel) {
+            this.setupSubscriptions();
+          }
+        }
+      });
   }
 
   async loadCompOffs() {
@@ -144,5 +149,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (this.userChannel) {
       this.supabase.removeChannel(this.userChannel);
     }
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

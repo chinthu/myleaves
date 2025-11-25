@@ -83,26 +83,24 @@ export class UsersComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.authService.currentUser$
+    this.authService.userProfile$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(async (u) => {
-        if (u) {
-          this.currentUser = await this.authService.getUserProfile();
-          if (this.currentUser) {
-            this.isSuperAdmin = this.currentUser.role === 'SUPER_ADMIN';
+      .subscribe(async (userProfile) => {
+        if (userProfile) {
+          this.currentUser = userProfile;
+          this.isSuperAdmin = this.currentUser.role === 'SUPER_ADMIN';
 
-            if (this.isSuperAdmin) {
-              await this.loadOrganizations();
-              // Default to first org or user's org
-              this.selectedOrgId = this.currentUser.organization_id || (this.organizations.length > 0 ? this.organizations[0].id : null);
-            } else {
-              this.selectedOrgId = this.currentUser.organization_id;
-            }
+          if (this.isSuperAdmin) {
+            await this.loadOrganizations();
+            // Default to first org or user's org
+            this.selectedOrgId = this.currentUser.organization_id || (this.organizations.length > 0 ? this.organizations[0].id : null);
+          } else {
+            this.selectedOrgId = this.currentUser.organization_id;
+          }
 
-            if (this.selectedOrgId) {
-              this.formData.organization_id = this.selectedOrgId;
-              this.loadUsers();
-            }
+          if (this.selectedOrgId) {
+            this.formData.organization_id = this.selectedOrgId;
+            this.loadUsers();
           }
         }
       });

@@ -38,15 +38,12 @@ export class OrganizationsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.authService.currentUser$
+    this.authService.userProfile$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(async (u) => {
-        if (u) {
-          this.currentUser = await this.authService.getUserProfile();
-          // Only Super Admin can access this
-          if (this.currentUser && this.currentUser.role === 'SUPER_ADMIN') {
-            this.loadOrganizations();
-          }
+      .subscribe((userProfile) => {
+        if (userProfile && userProfile.role === 'SUPER_ADMIN') {
+          this.currentUser = userProfile;
+          this.loadOrganizations();
         }
       });
   }

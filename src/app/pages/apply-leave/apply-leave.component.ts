@@ -59,14 +59,12 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.authService.currentUser$
+    this.authService.userProfile$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(async (u) => {
-        if (u) {
-          this.user = await this.authService.getUserProfile();
-          if (this.user && this.user.organization_id) {
-            this.loadGroups(this.user.organization_id);
-          }
+      .subscribe((userProfile) => {
+        if (userProfile && userProfile.organization_id) {
+          this.user = userProfile;
+          this.loadGroups(this.user.organization_id);
         }
       });
   }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
@@ -10,6 +10,8 @@ import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { DropdownModule } from 'primeng/dropdown';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-leave-settings',
@@ -27,7 +29,7 @@ import { DropdownModule } from 'primeng/dropdown';
   templateUrl: './leave-settings.component.html',
   styleUrls: ['./leave-settings.component.scss']
 })
-export class LeaveSettingsComponent implements OnInit {
+export class LeaveSettingsComponent implements OnInit, OnDestroy {
   supabase: SupabaseClient;
   user: any = null;
   loading = false;
@@ -43,6 +45,7 @@ export class LeaveSettingsComponent implements OnInit {
   organizations: any[] = [];
   selectedOrgId: string | null = null;
   isSuperAdmin = false;
+  private destroy$ = new Subject<void>();
 
   years = [
     { label: '2024', value: 2024 },
@@ -57,22 +60,26 @@ export class LeaveSettingsComponent implements OnInit {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
 
-  async ngOnInit() {
-    this.user = await this.authService.getUserProfile();
-    if (this.user) {
-      this.isSuperAdmin = this.user.role === 'SUPER_ADMIN';
+  ngOnInit() {
+    this.authService.userProfile$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(async (userProfile) => {
+        if (userProfile) {
+          this.user = userProfile;
+          this.isSuperAdmin = this.user.role === 'SUPER_ADMIN';
 
-      if (this.isSuperAdmin) {
-        await this.loadOrganizations();
-        this.selectedOrgId = this.user.organization_id || (this.organizations.length > 0 ? this.organizations[0].id : null);
-      } else {
-        this.selectedOrgId = this.user.organization_id;
-      }
+          if (this.isSuperAdmin) {
+            await this.loadOrganizations();
+            this.selectedOrgId = this.user.organization_id || (this.organizations.length > 0 ? this.organizations[0].id : null);
+          } else {
+            this.selectedOrgId = this.user.organization_id;
+          }
 
-      if (this.selectedOrgId) {
-        this.loadSettings();
-      }
-    }
+          if (this.selectedOrgId) {
+            this.loadSettings();
+          }
+        }
+      });
   }
 
   async loadOrganizations() {
@@ -181,5 +188,10 @@ export class LeaveSettingsComponent implements OnInit {
     } finally {
       this.loading = false;
     }
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }
