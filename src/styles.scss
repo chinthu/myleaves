@@ -277,6 +277,12 @@ button {
 .p-inputnumber-buttons-horizontal .p-button {
     border-radius: 0 !important;
 }
+.p-input-icon-left>i, .p-input-icon-left>.p-icon-wrapper, .p-input-icon-right>i, .p-input-icon-right>.p-icon-wrapper
+ {
+    position: absolute;
+    top: 50%;
+    margin-top: -.5rem !important;
+}
 // Dropdown Overrides
 .p-dropdown {
     min-width: 180px;

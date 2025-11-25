@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1A1A1A;
   padding: 2rem;
 }
 
@@ -25,7 +25,7 @@
   width: 4rem;
   height: 4rem;
   margin: 0 auto 1rem;
-  background: var(--primary-color);
+  background: #C5FF41;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -34,7 +34,7 @@
 
 .logo i {
   font-size: 2rem;
-  color: white;
+  color: #1A1A1A;
 }
 
 .login-header h1 {
@@ -95,15 +95,31 @@
 .remember-me label {
   cursor: pointer;
   color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+:host ::ng-deep .remember-me .p-checkbox {
+  display: flex;
+  align-items: center;
+}
+
+:host ::ng-deep .remember-me .p-checkbox .p-checkbox-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .forgot-password-link a {
-  color: var(--primary-color);
+  color: #1A1A1A;
   font-size: 0.9rem;
   cursor: pointer;
+  font-weight: 600;
 }
 
 .forgot-password-link a:hover {
+  color: #C5FF41;
   text-decoration: underline;
 }
 
@@ -113,12 +129,13 @@
 }
 
 .back-to-login a {
-  color: var(--primary-color);
+  color: #1A1A1A;
   cursor: pointer;
   font-weight: 600;
 }
 
 .back-to-login a:hover {
+  color: #C5FF41;
   text-decoration: underline;
 }
 
