@@ -49,11 +49,12 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
             this.userRole = userProfile.role;
             this.setRoleFlags(this.userRole);
             
-            // Redirect super admin/HR users from default route to hr-dashboard
+            // Only SUPER_ADMIN is automatically redirected from default route to hr-dashboard
+            // HR, APPROVER, and ADMIN can access both personal dashboard and HR dashboard
             const currentUrl = this.router.url;
-            if ((userProfile.role === 'SUPER_ADMIN' || userProfile.role === 'HR') && 
+            if (userProfile.role === 'SUPER_ADMIN' && 
                 (currentUrl === '/' || currentUrl === '')) {
-              console.log('MainLayout: Redirecting super admin/HR from default route to hr-dashboard');
+              console.log('MainLayout: Redirecting super admin from default route to hr-dashboard');
               setTimeout(() => {
                 this.router.navigate(['/hr-dashboard']).catch(err => {
                   console.error('Navigation error:', err);

@@ -64,6 +64,12 @@ export class UsersComponent implements OnInit, OnDestroy {
   organizations: any[] = [];
   selectedOrgId: string | null = null;
   isSuperAdmin = false;
+  isHR = false;
+  isApprover = false;
+  isAdmin = false;
+  
+  // For Approver: Get users in their approval groups
+  approvalGroupIds: string[] = [];
   
   // Leave Stats View
   showLeaveStats = false;
@@ -116,6 +122,9 @@ export class UsersComponent implements OnInit, OnDestroy {
         if (userProfile) {
           this.currentUser = userProfile;
           this.isSuperAdmin = this.currentUser.role === 'SUPER_ADMIN';
+          this.isHR = this.currentUser.role === 'HR';
+          this.isApprover = this.currentUser.role === 'APPROVER';
+          this.isAdmin = this.currentUser.role === 'ADMIN';
 
           if (this.isSuperAdmin) {
             await this.loadOrganizations();
@@ -125,12 +134,39 @@ export class UsersComponent implements OnInit, OnDestroy {
             this.selectedOrgId = this.currentUser.organization_id;
           }
 
-          if (this.selectedOrgId) {
-            this.formData.organization_id = this.selectedOrgId;
+          // For Approver: Load their approval groups
+          if (this.isApprover) {
+            await this.loadApprovalGroups();
+          }
+
+          // Load users if we have org ID (for HR/Admin) or if approver
+          if (this.selectedOrgId || this.isApprover) {
+            if (this.selectedOrgId) {
+              this.formData.organization_id = this.selectedOrgId;
+            }
             this.loadUsers();
           }
         }
       });
+  }
+
+  async loadApprovalGroups() {
+    try {
+      // Get groups where this user is a member (these are the approval groups)
+      const { data: groupMembers, error } = await this.supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', this.currentUser.id);
+
+      if (error) {
+        console.error('Error loading approval groups:', error);
+        return;
+      }
+
+      this.approvalGroupIds = groupMembers?.map((gm: any) => gm.group_id) || [];
+    } catch (error) {
+      console.error('Error loading approval groups:', error);
+    }
   }
 
   async loadOrganizations() {
@@ -154,20 +190,74 @@ export class UsersComponent implements OnInit, OnDestroy {
   }
 
   async loadUsers() {
-    if (!this.selectedOrgId) return;
+    // For approver, we can load users even without selectedOrgId (they use approval groups)
+    // For HR/Admin, we need selectedOrgId
+    if (!this.selectedOrgId && !this.isApprover) {
+      console.warn('Cannot load users: No organization ID and user is not an approver');
+      return;
+    }
 
+    this.loading = true;
     this.loadingService.show();
     try {
-      const { data, error } = await this.supabase
+      let query = this.supabase
         .from('users')
-        .select('*, organizations(name)')
-        .eq('organization_id', this.selectedOrgId)
-        .order('created_at', { ascending: false });
+        .select('*, organizations(name)');
 
+      // If Approver, filter to only show users in their approval groups
+      if (this.isApprover && this.approvalGroupIds.length > 0) {
+        // Get user IDs from group members
+        const { data: groupMembers, error: gmError } = await this.supabase
+          .from('group_members')
+          .select('user_id')
+          .in('group_id', this.approvalGroupIds);
+
+        if (gmError) throw gmError;
+
+        const userIds = groupMembers?.map((gm: any) => gm.user_id) || [];
+        
+        if (userIds.length > 0) {
+          query = query.in('id', userIds);
+        } else {
+          // No users in approval groups
+          this.users = [];
+          this.loading = false;
+          return;
+        }
+      } else if (this.selectedOrgId) {
+        // For HR/Admin/Super Admin, filter by organization
+        query = query.eq('organization_id', this.selectedOrgId);
+      } else {
+        // Approver with no approval groups
+        this.users = [];
+        this.loading = false;
+        return;
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase query error:', error);
+        throw error;
+      }
+
+      console.log('Loaded users:', data?.length || 0, 'users');
+      
       if (data) {
         this.users = data;
+      } else {
+        this.users = [];
       }
+    } catch (error: any) {
+      console.error('Error loading users:', error);
+      this.messageService.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: error.message || 'Failed to load users' 
+      });
+      this.users = [];
     } finally {
+      this.loading = false;
       this.loadingService.hide();
     }
   }

@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { LoginComponent } from './pages/login/login.component';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
 import { authGuard } from './guards/auth.guard';
+import { adminOnlyGuard } from './guards/role.guard';
 
 export const routes: Routes = [
     { path: 'login', component: LoginComponent },
@@ -45,7 +46,7 @@ export const routes: Routes = [
             {
                 path: 'leave-settings',
                 loadComponent: () => import('./pages/leave-settings/leave-settings.component').then(m => m.LeaveSettingsComponent),
-                canActivate: [authGuard]
+                canActivate: [authGuard, adminOnlyGuard]
             },
             {
                 path: 'public-holidays',

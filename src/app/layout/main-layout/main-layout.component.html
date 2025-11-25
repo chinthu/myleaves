@@ -18,7 +18,7 @@
         </div>
 
         <nav class="sidebar-nav" *ngIf="user">
-            <!-- Dashboard - Hidden for Super Admin -->
+            <!-- Dashboard - All users except Super Admin can access personal dashboard -->
             <a *ngIf="user.role !== 'SUPER_ADMIN'" routerLink="/" routerLinkActive="active"
                 [routerLinkActiveOptions]="{exact: true}" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">🏠</span> Dashboard
@@ -36,8 +36,8 @@
                 <span class="icon">✅</span> Approvals
             </a>
 
-            <!-- HR Only -->
-            <a *ngIf="user.role === 'HR' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'"
+            <!-- HR/Approver Dashboard -->
+            <a *ngIf="user.role === 'HR' || user.role === 'APPROVER' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'"
                 routerLink="/hr-dashboard" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">👥</span> HR Dashboard
             </a>
@@ -45,7 +45,8 @@
                 routerLink="/comp-offs" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">🎁</span> Comp Offs
             </a>
-            <a *ngIf="user.role === 'HR' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'"
+            <!-- Leave Settings - Admin/Super Admin Only -->
+            <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'"
                 routerLink="/leave-settings" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">⚙️</span> Leave Settings
             </a>
@@ -55,10 +56,10 @@
                 <span class="icon">📅</span> Public Holidays
             </a>
 
-            <!-- Admin Only -->
-            <div class="nav-divider" *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'">Admin</div>
+            <!-- Admin/HR/Approver -->
+            <div class="nav-divider" *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'HR' || user.role === 'APPROVER'">Management</div>
 
-            <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'" routerLink="/users"
+            <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'HR' || user.role === 'APPROVER'" routerLink="/users"
                 routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">👤</span> Users
             </a>
