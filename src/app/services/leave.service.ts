@@ -50,11 +50,59 @@ export class LeaveService {
   }
 
   async approveLeave(leaveId: string, approverId: string) {
-    // In a real app, we might log who approved it
-    return this.supabase
+    // Step 1: Get leave details to calculate days and user
+    const { data: leaveData, error: leaveError } = await this.supabase
+      .from('leaves')
+      .select('user_id, start_date, end_date, type')
+      .eq('id', leaveId)
+      .single();
+
+    if (leaveError || !leaveData) {
+      return { data: null, error: leaveError || new Error('Leave not found') };
+    }
+
+    // Step 2: Calculate number of leave days
+    const startDate = new Date(leaveData.start_date);
+    const endDate = new Date(leaveData.end_date);
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const leaveDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
+
+    // Step 3: Update leave status to APPROVED
+    const { error: updateError } = await this.supabase
       .from('leaves')
       .update({ status: 'APPROVED' })
       .eq('id', leaveId);
+
+    if (updateError) {
+      return { data: null, error: updateError };
+    }
+
+    // Step 4: Deduct from user's leave balance
+    const balanceField = (leaveData as any).type === 'CASUAL' ? 'balance_casual' : 'balance_medical';
+
+    // Get current balance
+    const { data: userData, error: userError } = await this.supabase
+      .from('users')
+      .select(balanceField)
+      .eq('id', leaveData.user_id)
+      .single();
+
+    if (userError) return { data: null, error: userError };
+
+    const currentBalance = (userData as any)[balanceField] || 0;
+    const newBalance = Math.max(0, currentBalance - leaveDays);
+
+    // Update balance
+    const { error: updateBalanceError } = await this.supabase
+      .from('users')
+      .update({ [balanceField]: newBalance })
+      .eq('id', leaveData.user_id);
+
+    if (updateBalanceError) {
+      return { data: null, error: updateBalanceError };
+    }
+
+    return { data: { success: true }, error: null };
   }
 
   async rejectLeave(leaveId: string, reason: string) {

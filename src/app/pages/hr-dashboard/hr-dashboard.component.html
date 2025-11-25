@@ -1,61 +1,157 @@
-<div class="hr-dashboard-container">
-    <h2>HR Overview</h2>
+<div class="hr-dashboard-wrapper">
+    <div class="dashboard-header">
+        <h1>HR Dashboard</h1>
+        <p>Comprehensive leave management analytics and insights</p>
+    </div>
 
+    <!-- Quick Stats Cards -->
     <div class="stats-grid">
         <div class="stat-card">
-            <h3>Total Employees</h3>
-            <div class="value">{{ totalUsers }}</div>
+            <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="pi pi-users"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{totalUsers}}</div>
+                <div class="stat-label">Total Employees</div>
+            </div>
         </div>
+
         <div class="stat-card">
-            <h3>On Leave Today</h3>
-            <div class="value">{{ leavesToday }}</div>
+            <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="pi pi-calendar-times"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{todayStats.total}}</div>
+                <div class="stat-label">On Leave Today</div>
+            </div>
         </div>
+
         <div class="stat-card">
-            <h3>Pending Requests</h3>
-            <div class="value">{{ pendingRequests }}</div>
+            <div class="stat-icon" style="background: linear-gradient(135deg, #fad0c4 0%, #ffd1ff 100%);">
+                <i class="pi pi-clock"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{pendingRequests}}</div>
+                <div class="stat-label">Pending Approvals</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);">
+                <i class="pi pi-exclamation-triangle"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{lowBalanceUsers}}</div>
+                <div class="stat-label">Low Balance Alerts</div>
+            </div>
         </div>
     </div>
 
-    <div class="all-leaves-section">
-        <h3>Recent Leave Requests (All Users)</h3>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Employee</th>
-                        <th>Type</th>
-                        <th>Dates</th>
-                        <th>Days</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let leave of allLeaves">
-                        <td>
-                            <div class="user-info">
-                                <span class="name">{{ leave.users?.full_name || 'Unknown' }}</span>
-                                <span class="email">{{ leave.users?.email }}</span>
-                            </div>
-                        </td>
-                        <td>{{ leave.type }}</td>
-                        <td>
-                            {{ leave.start_date | date }}
-                            <span *ngIf="leave.start_date !== leave.end_date"> - {{ leave.end_date | date }}</span>
-                        </td>
-                        <td>{{ leave.days_count }}</td>
-                        <td>
-                            <span class="status-badge" [ngClass]="{
-                    'status-approved': leave.status === 'APPROVED',
-                    'status-rejected': leave.status === 'REJECTED',
-                    'status-pending': leave.status === 'PENDING'
-                }">{{ leave.status }}</span>
-                        </td>
-                    </tr>
-                    <tr *ngIf="allLeaves.length === 0">
-                        <td colspan="5" class="text-center">No records found.</td>
-                    </tr>
-                </tbody>
-            </table>
+    <!-- Today's Leaves Section -->
+    <div class="section-card">
+        <div class="section-header">
+            <h2>Who's On Leave Today</h2>
+            <div class="today-breakdown">
+                <span class="breakdown-item"><span class="badge badge-casual">{{todayStats.casual}}</span> Casual</span>
+                <span class="breakdown-item"><span class="badge badge-medical">{{todayStats.medical}}</span>
+                    Medical</span>
+                <span class="breakdown-item"><span class="badge badge-compoff">{{todayStats.compOff}}</span>
+                    Comp-off</span>
+            </div>
         </div>
+
+        <div class="today-leaves-grid" *ngIf="todaysLeaves.length > 0">
+            <div class="leave-card" *ngFor="let leave of todaysLeaves">
+                <div class="leave-avatar">{{leave.users?.full_name?.charAt(0) || 'U'}}</div>
+                <div class="leave-details">
+                    <div class="leave-name">{{leave.users?.full_name || leave.users?.email}}</div>
+                    <div class="leave-info">
+                        <span [class]="getTypeBadgeClass(leave.type)">{{leave.type}}</span>
+                        <span class="leave-duration" *ngIf="leave.is_half_day">
+                            {{leave.half_day_slot === 'MORNING' ? 'First Half' : 'Second Half'}}
+                        </span>
+                        <span class="leave-duration" *ngIf="!leave.is_half_day">Full Day</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="empty-state" *ngIf="todaysLeaves.length === 0">
+            <i class="pi pi-check-circle"></i>
+            <p>Everyone is present today!</p>
+        </div>
+    </div>
+
+    <!-- Analytics Charts -->
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3>Leave Type Distribution</h3>
+            <p-chart type="pie" [data]="leaveTypeChart" [options]="chartOptions"></p-chart>
+        </div>
+
+        <div class="chart-card">
+            <h3>Leave Status Overview</h3>
+            <p-chart type="doughnut" [data]="leaveStatusChart" [options]="chartOptions"></p-chart>
+        </div>
+
+        <div class="chart-card full-width">
+            <h3>Leave Trend (Last 6 Months)</h3>
+            <p-chart type="line" [data]="leaveTrendChart" [options]="chartOptions"></p-chart>
+        </div>
+    </div>
+
+    <!-- All Leaves Grid -->
+    <div class="section-card">
+        <div class="section-header">
+            <h2>All Leave Applications</h2>
+            <div class="filters-group">
+                <p-calendar [(ngModel)]="dateRange" selectionMode="range" [readonlyInput]="true"
+                    placeholder="Date Range" (onSelect)="onFilterChange()"></p-calendar>
+
+                <p-dropdown [options]="statusOptions" [(ngModel)]="selectedStatus" optionLabel="label"
+                    optionValue="value" (onChange)="onFilterChange()" placeholder="Status"></p-dropdown>
+
+                <p-button label="Clear" icon="pi pi-filter-slash" styleClass="p-button-outlined"
+                    (onClick)="clearFilters()"></p-button>
+            </div>
+        </div>
+
+        <p-table [value]="filteredLeaves" [paginator]="true" [rows]="10" responsiveLayout="scroll" [loading]="loading">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Employee</th>
+                    <th>Type</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Days</th>
+                    <th>Status</th>
+                    <th>Applied On</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-leave>
+                <tr>
+                    <td>
+                        <div class="employee-cell">
+                            <div class="employee-avatar">{{leave.users?.full_name?.charAt(0) || 'U'}}</div>
+                            <div>
+                                <div class="font-medium">{{leave.users?.full_name || leave.users?.email}}</div>
+                                <div class="text-sm text-500">{{leave.users?.email}}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span [class]="getTypeBadgeClass(leave.type)">{{leave.type}}</span></td>
+                    <td>{{leave.start_date | date:'MMM d, y'}}</td>
+                    <td>{{leave.end_date | date:'MMM d, y'}}</td>
+                    <td>{{leave.days_count}}</td>
+                    <td><p-tag [value]="leave.status" [severity]="getStatusSeverity(leave.status)"></p-tag></td>
+                    <td>{{leave.created_at | date:'MMM d, y'}}</td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="7" class="text-center p-4">No leave applications found</td>
+                </tr>
+            </ng-template>
+        </p-table>
     </div>
 </div>

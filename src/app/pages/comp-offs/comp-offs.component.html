@@ -1,55 +1,93 @@
-<div class="comp-offs-container">
-    <h2>Manage Comp Offs</h2>
+<div class="compoff-container">
+    <p-toast></p-toast>
 
-    <div *ngIf="message" class="alert alert-success">{{ message }}</div>
-    <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-
-    <div class="content-grid">
-        <!-- Form Section -->
-        <div class="form-card">
-            <h3>Create New Comp Off</h3>
-            <form (ngSubmit)="createCompOff()">
-                <div class="form-group">
-                    <label>Title</label>
-                    <input type="text" name="title" [(ngModel)]="title" placeholder="e.g. Weekend Work" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Description</label>
-                    <textarea name="description" [(ngModel)]="description" rows="3"
-                        placeholder="Optional details"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label>Number of Days</label>
-                    <input type="number" name="days" [(ngModel)]="days" min="0.5" step="0.5" required>
-                </div>
-
-                <button type="submit" class="btn-primary" [disabled]="loading">
-                    {{ loading ? 'Creating...' : 'Create & Assign' }}
-                </button>
-            </form>
-        </div>
-
-        <!-- User Selection Section -->
-        <div class="users-card">
-            <h3>Select Employees</h3>
-            <div class="users-list">
-                <div *ngFor="let u of users" class="user-item" [class.selected]="selectedUserIds.includes(u.id)"
-                    (click)="toggleUserSelection(u.id)">
-                    <div class="checkbox">
-                        <input type="checkbox" [checked]="selectedUserIds.includes(u.id)" readonly>
-                    </div>
-                    <div class="user-info">
-                        <span class="name">{{ u.full_name || 'Unknown' }}</span>
-                        <span class="email">{{ u.email }}</span>
-                    </div>
-                </div>
-                <div *ngIf="users.length === 0" class="empty-text">No users found.</div>
+    <div class="header">
+        <div class="flex justify-content-between align-items-center">
+            <div>
+                <h1>Comp-Off Management</h1>
+                <p>Manage compensatory leaves for employees</p>
             </div>
-            <div class="selection-summary">
-                {{ selectedUserIds.length }} user(s) selected
-            </div>
+            <button *ngIf="canManage" pButton label="Add Comp-Off" icon="pi pi-plus" (click)="openAddModal()"></button>
         </div>
     </div>
+
+    <div class="card">
+        <p-table [value]="compOffs" [loading]="loading" [rows]="10" [paginator]="true" responsiveLayout="scroll">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Employee</th>
+                    <th>Work Date</th>
+                    <th>Reason</th>
+                    <th>Added On</th>
+                    <th *ngIf="canManage">Actions</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item>
+                <tr>
+                    <td>
+                        <div class="font-medium">{{item.users?.full_name}}</div>
+                        <div class="text-sm text-500">{{item.users?.email}}</div>
+                    </td>
+                    <td>{{item.work_date | date:'mediumDate'}}</td>
+                    <td>{{item.reason}}</td>
+                    <td>{{item.created_at | date:'shortDate'}}</td>
+                    <td *ngIf="canManage">
+                        <div class="flex gap-2">
+                            <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text"
+                                (click)="openEditModal(item)" pTooltip="Edit"></button>
+                            <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text"
+                                (click)="deleteCompOff(item)" pTooltip="Delete"></button>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td [attr.colspan]="canManage ? 5 : 4" class="text-center p-4">No comp-off records found.</td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <p-dialog [(visible)]="showModal" [header]="isEditing ? 'Edit Comp-Off' : 'Add Comp-Off'" [modal]="true"
+        [style]="{width: '500px'}" styleClass="p-fluid custom-modal">
+        <div class="field" *ngIf="!isEditing">
+            <label for="user" class="font-bold block mb-2">Select Employees</label>
+            <p-multiSelect [options]="users" [(ngModel)]="formData.user_ids" optionLabel="full_name" optionValue="id"
+                placeholder="Select Employees" [filter]="true" filterBy="full_name,email" appendTo="body" display="chip"
+                [style]="{'width':'100%'}">
+                <ng-template let-user pTemplate="item">
+                    <div class="flex align-items-center gap-2">
+                        <div class="avatar-small">{{user.full_name.charAt(0)}}</div>
+                        <div class="flex flex-column">
+                            <span class="font-medium">{{user.full_name}}</span>
+                            <span class="text-sm text-500">{{user.email}}</span>
+                        </div>
+                    </div>
+                </ng-template>
+            </p-multiSelect>
+            <small class="block mt-1 text-500">Select one or more employees to credit comp-off.</small>
+        </div>
+
+        <div class="field mt-4">
+            <label for="date" class="font-bold block mb-2">Work Date</label>
+            <p-calendar [(ngModel)]="formData.work_date" appendTo="body" [showIcon]="true" inputId="date"
+                placeholder="Select date worked" [style]="{'width':'100%'}"></p-calendar>
+        </div>
+
+        <div class="field mt-4">
+            <label for="reason" class="font-bold block mb-2">Reason / Description</label>
+            <textarea pInputTextarea [(ngModel)]="formData.reason" rows="4"
+                placeholder="e.g. Worked on Saturday for release" class="w-full"></textarea>
+        </div>
+
+        <ng-template pTemplate="footer">
+            <div class="flex justify-content-end gap-2 mt-4">
+                <button pButton label="Cancel" icon="pi pi-times" class="p-button-text"
+                    (click)="showModal = false"></button>
+                <button pButton label="Save" icon="pi pi-check" (click)="saveCompOff()" [loading]="loading"></button>
+            </div>
+        </ng-template>
+    </p-dialog>
 </div>

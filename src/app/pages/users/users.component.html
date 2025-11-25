@@ -1,87 +1,83 @@
 <div class="users-container">
-    <div class="header">
-        <h2>User Management</h2>
-        <button class="btn-primary" (click)="openAddModal()">+ Add User</button>
+    <p-toast></p-toast>
+    <div class="header mb-4">
+        <div class="flex justify-content-between align-items-center">
+            <div class="flex gap-3 align-items-center">
+                <h2 class="m-0">User Management</h2>
+                <p-dropdown *ngIf="isSuperAdmin" [options]="organizations" [(ngModel)]="selectedOrgId"
+                    optionLabel="name" optionValue="id" (onChange)="onOrgChange()" placeholder="Select Organization"
+                    styleClass="w-15rem">
+                </p-dropdown>
+            </div>
+            <button pButton label="Add User" icon="pi pi-plus" (click)="openAddModal()"></button>
+        </div>
     </div>
 
-    <div class="table-card">
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Designation</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let user of users">
-                        <td>{{ user.full_name }}</td>
-                        <td>{{ user.email }}</td>
-                        <td><span class="badge">{{ user.role }}</span></td>
-                        <td>{{ user.designation || '-' }}</td>
-                        <td>
-                            <button class="btn-icon" (click)="openEditModal(user)">Edit</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+    <div class="card">
+        <p-table [value]="users" [loading]="loading" [rows]="10" [paginator]="true" responsiveLayout="scroll"
+            [globalFilterFields]="['full_name', 'email', 'role']">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th pSortableColumn="full_name">Name <p-sortIcon field="full_name"></p-sortIcon></th>
+                    <th pSortableColumn="email">Email <p-sortIcon field="email"></p-sortIcon></th>
+                    <th pSortableColumn="role">Role <p-sortIcon field="role"></p-sortIcon></th>
+                    <th pSortableColumn="designation">Designation <p-sortIcon field="designation"></p-sortIcon></th>
+                    <th>Actions</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-user>
+                <tr>
+                    <td>{{ user.full_name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td><p-tag [value]="user.role" [severity]="getRoleSeverity(user.role)"></p-tag></td>
+                    <td>{{ user.designation || '-' }}</td>
+                    <td>
+                        <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text"
+                            (click)="openEditModal(user)"></button>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="5" class="text-center p-4">No users found.</td>
+                </tr>
+            </ng-template>
+        </p-table>
     </div>
 
     <!-- Modal -->
-    <div class="modal-overlay" *ngIf="showModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>{{ isEditing ? 'Edit User' : 'Add New User' }}</h3>
-                <button class="close-btn" (click)="closeModal()">&times;</button>
-            </div>
+    <p-dialog [(visible)]="showModal" [header]="isEditing ? 'Edit User' : 'Add New User'" [modal]="true"
+        [style]="{width: '450px'}" styleClass="p-fluid">
 
-            <div class="modal-body">
-                <div *ngIf="message" class="alert alert-success">{{ message }}</div>
-                <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-
-                <form (ngSubmit)="saveUser()">
-                    <div class="form-group">
-                        <label>Full Name</label>
-                        <input type="text" name="full_name" [(ngModel)]="formData.full_name" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" name="email" [(ngModel)]="formData.email" [disabled]="isEditing" required>
-                    </div>
-
-                    <div class="form-group" *ngIf="!isEditing">
-                        <label>Password</label>
-                        <input type="password" name="password" [(ngModel)]="formData.password" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Role</label>
-                        <select name="role" [(ngModel)]="formData.role" required>
-                            <option value="USER">User</option>
-                            <option value="APPROVER">Approver</option>
-                            <option value="HR">HR Manager</option>
-                            <option value="ADMIN">Admin</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Designation</label>
-                        <input type="text" name="designation" [(ngModel)]="formData.designation">
-                    </div>
-
-                    <div class="modal-footer">
-                        <button type="button" class="btn-secondary" (click)="closeModal()">Cancel</button>
-                        <button type="submit" class="btn-primary" [disabled]="loading">
-                            {{ loading ? 'Saving...' : 'Save User' }}
-                        </button>
-                    </div>
-                </form>
-            </div>
+        <div class="field">
+            <label for="full_name">Full Name</label>
+            <input pInputText id="full_name" [(ngModel)]="formData.full_name" required />
         </div>
-    </div>
+
+        <div class="field mt-3">
+            <label for="email">Email</label>
+            <input pInputText id="email" type="email" [(ngModel)]="formData.email" [disabled]="isEditing" required />
+        </div>
+
+        <div class="field mt-3" *ngIf="!isEditing">
+            <label for="password">Password</label>
+            <input pInputText id="password" type="password" [(ngModel)]="formData.password" required />
+        </div>
+
+        <div class="field mt-3">
+            <label for="role">Role</label>
+            <p-dropdown id="role" [options]="roles" [(ngModel)]="formData.role" placeholder="Select Role"
+                appendTo="body"></p-dropdown>
+        </div>
+
+        <div class="field mt-3">
+            <label for="designation">Designation</label>
+            <input pInputText id="designation" [(ngModel)]="formData.designation" />
+        </div>
+
+        <ng-template pTemplate="footer">
+            <button pButton label="Cancel" icon="pi pi-times" class="p-button-text" (click)="closeModal()"></button>
+            <button pButton label="Save" icon="pi pi-check" (click)="saveUser()" [loading]="loading"></button>
+        </ng-template>
+    </p-dialog>
 </div>

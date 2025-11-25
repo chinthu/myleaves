@@ -4,13 +4,32 @@ import { FormsModule } from '@angular/forms';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../services/auth.service';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { DropdownModule } from 'primeng/dropdown';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
+import { TagModule } from 'primeng/tag';
 
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    DialogModule,
+    InputTextModule,
+    DropdownModule,
+    ToastModule,
+    TagModule
+  ],
+  providers: [MessageService],
   templateUrl: './users.component.html',
-  styleUrls: ['./users.component.css']
+  styleUrls: ['./users.component.scss']
 })
 export class UsersComponent implements OnInit {
   supabase: SupabaseClient;
@@ -35,6 +54,28 @@ export class UsersComponent implements OnInit {
   message = '';
   error = '';
 
+  // Organization Filtering (Super Admin)
+  organizations: any[] = [];
+  selectedOrgId: string | null = null;
+  isSuperAdmin = false;
+
+  roles = [
+    { label: 'User', value: 'USER' },
+    { label: 'Approver', value: 'APPROVER' },
+    { label: 'HR Manager', value: 'HR' },
+    { label: 'Admin', value: 'ADMIN' }
+  ];
+
+  getRoleSeverity(role: string): "success" | "info" | "warning" | "danger" | "secondary" | "contrast" | undefined {
+    switch (role) {
+      case 'ADMIN': return 'danger';
+      case 'HR': return 'warning';
+      case 'APPROVER': return 'info';
+      case 'SUPER_ADMIN': return 'contrast';
+      default: return 'success';
+    }
+  }
+
   constructor(private authService: AuthService) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
@@ -43,19 +84,48 @@ export class UsersComponent implements OnInit {
     this.authService.currentUser$.subscribe(async (u) => {
       if (u) {
         this.currentUser = await this.authService.getUserProfile();
-        if (this.currentUser && this.currentUser.organization_id) {
-          this.formData.organization_id = this.currentUser.organization_id;
-          this.loadUsers();
+        if (this.currentUser) {
+          this.isSuperAdmin = this.currentUser.role === 'SUPER_ADMIN';
+
+          if (this.isSuperAdmin) {
+            await this.loadOrganizations();
+            // Default to first org or user's org
+            this.selectedOrgId = this.currentUser.organization_id || (this.organizations.length > 0 ? this.organizations[0].id : null);
+          } else {
+            this.selectedOrgId = this.currentUser.organization_id;
+          }
+
+          if (this.selectedOrgId) {
+            this.formData.organization_id = this.selectedOrgId;
+            this.loadUsers();
+          }
         }
       }
     });
   }
 
+  async loadOrganizations() {
+    const { data } = await this.supabase
+      .from('organizations')
+      .select('id, name')
+      .order('name');
+    this.organizations = data || [];
+  }
+
+  onOrgChange() {
+    if (this.selectedOrgId) {
+      this.formData.organization_id = this.selectedOrgId;
+      this.loadUsers();
+    }
+  }
+
   async loadUsers() {
+    if (!this.selectedOrgId) return;
+
     const { data, error } = await this.supabase
       .from('users')
-      .select('*')
-      .eq('organization_id', this.currentUser.organization_id)
+      .select('*, organizations(name)')
+      .eq('organization_id', this.selectedOrgId)
       .order('created_at', { ascending: false });
 
     if (data) {
@@ -164,8 +234,9 @@ export class UsersComponent implements OnInit {
       this.loadUsers();
       setTimeout(() => this.closeModal(), 2000);
 
-    } catch (err: any) {
-      this.error = err.message || 'Operation failed.';
+    } catch (error: any) {
+      console.error('Error saving user:', error);
+      this.error = error.message || 'An error occurred';
     } finally {
       this.loading = false;
     }

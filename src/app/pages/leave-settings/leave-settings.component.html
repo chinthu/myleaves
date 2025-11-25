@@ -1,0 +1,76 @@
+<div class="settings-container">
+    <p-toast></p-toast>
+
+    <div class="header">
+        <h1>Leave Allocation Settings</h1>
+        <p>Configure default leave balances for your organization</p>
+    </div>
+
+    <div class="content-grid">
+        <!-- Configuration Card -->
+        <p-card styleClass="settings-card">
+            <div class="card-header">
+                <h2>Default Configuration</h2>
+
+                <div class="controls">
+                    <div class="control-group" *ngIf="isSuperAdmin">
+                        <label>Organization</label>
+                        <p-dropdown [options]="organizations" [(ngModel)]="selectedOrgId" optionLabel="name"
+                            optionValue="id" (onChange)="onOrgChange()" [style]="{'width':'200px'}"></p-dropdown>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Year</label>
+                        <p-dropdown [options]="years" [(ngModel)]="settings.year" (onChange)="loadSettings()"
+                            [style]="{'width':'120px'}"></p-dropdown>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-item">
+                    <label>Casual Leaves (CL)</label>
+                    <p-inputNumber [(ngModel)]="settings.default_casual_leaves" [showButtons]="true" [min]="0"
+                        [max]="50" buttonLayout="horizontal" inputId="cl" spinnerMode="horizontal" [step]="1"
+                        decrementButtonClass="p-button-secondary" incrementButtonClass="p-button-secondary"
+                        incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus">
+                    </p-inputNumber>
+                    <small>Default annual quota for casual leaves</small>
+                </div>
+
+                <div class="form-item">
+                    <label>Medical Leaves (ML)</label>
+                    <p-inputNumber [(ngModel)]="settings.default_medical_leaves" [showButtons]="true" [min]="0"
+                        [max]="50" buttonLayout="horizontal" inputId="ml" spinnerMode="horizontal" [step]="1"
+                        decrementButtonClass="p-button-secondary" incrementButtonClass="p-button-secondary"
+                        incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus">
+                    </p-inputNumber>
+                    <small>Default annual quota for medical leaves</small>
+                </div>
+            </div>
+
+            <div class="actions-footer">
+                <p-button label="Save Settings" icon="pi pi-save" (onClick)="saveSettings()"
+                    [loading]="loading"></p-button>
+            </div>
+        </p-card>
+
+        <!-- Bulk Actions Card -->
+        <p-card styleClass="settings-card danger-zone">
+            <div class="card-header">
+                <h2>Bulk Actions</h2>
+                <span class="badge-danger">Danger Zone</span>
+            </div>
+
+            <p>
+                Apply these default settings to all existing users in the organization.
+                <strong>Warning:</strong> This will overwrite current balances for everyone.
+            </p>
+
+            <div class="actions-footer">
+                <p-button label="Reset All Users to Defaults" icon="pi pi-refresh" styleClass="p-button-danger"
+                    (onClick)="bulkUpdateUsers()" [loading]="loading"></p-button>
+            </div>
+        </p-card>
+    </div>
+</div>

@@ -10,7 +10,7 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './organizations.component.html',
-  styleUrls: ['./organizations.component.css']
+  styleUrls: ['./organizations.component.scss']
 })
 export class OrganizationsComponent implements OnInit {
   supabase: SupabaseClient;

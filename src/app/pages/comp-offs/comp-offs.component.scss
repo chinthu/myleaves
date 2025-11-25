@@ -1,0 +1,54 @@
+.compoff-container {
+    padding: 2rem;
+    width: 100%;
+}
+
+.header {
+    margin-bottom: 2rem;
+}
+
+.header h1 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 2rem;
+}
+
+.header p {
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+.card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+:host ::ng-deep .p-button-rounded {
+    width: 2rem;
+    height: 2rem;
+}
+
+/* Modal Styling */
+.avatar-small {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.875rem;
+}
+
+:host ::ng-deep .p-dialog .p-dialog-content {
+    padding: 1.5rem;
+}
+
+:host ::ng-deep .p-multiselect-label-container {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}

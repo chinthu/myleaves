@@ -145,6 +145,86 @@ BEGIN
 END $$;
 
 -- ============================================
+-- COMP_OFFS TABLE
+-- ============================================
+
+DO $$ 
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT policyname FROM pg_policies WHERE tablename = 'comp_offs' AND schemaname = 'public')
+    LOOP
+        EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON public.comp_offs';
+    END LOOP;
+EXCEPTION
+    WHEN undefined_table THEN
+        NULL;
+END $$;
+
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'comp_offs') THEN
+        ALTER TABLE public.comp_offs ENABLE ROW LEVEL SECURITY;
+        
+        -- Everyone can view comp_offs
+        EXECUTE 'CREATE POLICY "comp_offs_select_all" ON public.comp_offs FOR SELECT TO authenticated USING (true)';
+        
+        -- Only HR, ADMIN, SUPER_ADMIN can insert comp_offs
+        EXECUTE 'CREATE POLICY "comp_offs_insert_restricted" ON public.comp_offs FOR INSERT TO authenticated 
+            WITH CHECK ((SELECT role FROM public.users WHERE id = auth.uid()) IN (''HR'', ''ADMIN'', ''SUPER_ADMIN''))';
+        
+        -- Only HR, ADMIN, SUPER_ADMIN can update comp_offs
+        EXECUTE 'CREATE POLICY "comp_offs_update_restricted" ON public.comp_offs FOR UPDATE TO authenticated 
+            USING ((SELECT role FROM public.users WHERE id = auth.uid()) IN (''HR'', ''ADMIN'', ''SUPER_ADMIN''))
+            WITH CHECK ((SELECT role FROM public.users WHERE id = auth.uid()) IN (''HR'', ''ADMIN'', ''SUPER_ADMIN''))';
+        
+        -- Only HR, ADMIN, SUPER_ADMIN can delete comp_offs
+        EXECUTE 'CREATE POLICY "comp_offs_delete_restricted" ON public.comp_offs FOR DELETE TO authenticated 
+            USING ((SELECT role FROM public.users WHERE id = auth.uid()) IN (''HR'', ''ADMIN'', ''SUPER_ADMIN''))';
+    END IF;
+END $$;
+
+-- ============================================
+-- USER_COMP_OFFS TABLE
+-- ============================================
+
+DO $$ 
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT policyname FROM pg_policies WHERE tablename = 'user_comp_offs' AND schemaname = 'public')
+    LOOP
+        EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON public.user_comp_offs';
+    END LOOP;
+EXCEPTION
+    WHEN undefined_table THEN
+        NULL;
+END $$;
+
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'user_comp_offs') THEN
+        ALTER TABLE public.user_comp_offs ENABLE ROW LEVEL SECURITY;
+        
+        -- Everyone can view their own or all user_comp_offs
+        EXECUTE 'CREATE POLICY "user_comp_offs_select_all" ON public.user_comp_offs FOR SELECT TO authenticated USING (true)';
+        
+        -- Only HR, ADMIN, SUPER_ADMIN can insert user_comp_offs
+        EXECUTE 'CREATE POLICY "user_comp_offs_insert_restricted" ON public.user_comp_offs FOR INSERT TO authenticated 
+            WITH CHECK ((SELECT role FROM public.users WHERE id = auth.uid()) IN (''HR'', ''ADMIN'', ''SUPER_ADMIN''))';
+        
+        -- Only HR, ADMIN, SUPER_ADMIN can update user_comp_offs
+        EXECUTE 'CREATE POLICY "user_comp_offs_update_restricted" ON public.user_comp_offs FOR UPDATE TO authenticated 
+            USING ((SELECT role FROM public.users WHERE id = auth.uid()) IN (''HR'', ''ADMIN'', ''SUPER_ADMIN''))
+            WITH CHECK ((SELECT role FROM public.users WHERE id = auth.uid()) IN (''HR'', ''ADMIN'', ''SUPER_ADMIN''))';
+        
+        -- Only HR, ADMIN, SUPER_ADMIN can delete user_comp_offs
+        EXECUTE 'CREATE POLICY "user_comp_offs_delete_restricted" ON public.user_comp_offs FOR DELETE TO authenticated 
+            USING ((SELECT role FROM public.users WHERE id = auth.uid()) IN (''HR'', ''ADMIN'', ''SUPER_ADMIN''))';
+    END IF;
+END $$;
+
+-- ============================================
 -- VERIFICATION
 -- ============================================
 

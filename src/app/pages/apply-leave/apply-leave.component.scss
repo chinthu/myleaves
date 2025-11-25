@@ -1,0 +1,30 @@
+/* Clean Apply Leave Layout */
+.apply-leave-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/* Remove p-card shadow and styling */
+::ng-deep .apply-leave-container .p-card {
+    box-shadow: none !important;
+    border: none !important;
+}
+
+::ng-deep .apply-leave-container .p-card .p-card-body {
+    padding: 1.5rem;
+}
+
+::ng-deep .apply-leave-container .p-card .p-card-content {
+    padding: 0;
+}
+
+.days-display {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    color: var(--text-main);
+    font-weight: 500;
+}

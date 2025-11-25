@@ -18,11 +18,15 @@
         </div>
 
         <nav class="sidebar-nav" *ngIf="user">
-            <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item"
-                (click)="sidebarOpen = false">
+            <!-- Dashboard - Hidden for Super Admin -->
+            <a *ngIf="user.role !== 'SUPER_ADMIN'" routerLink="/" routerLinkActive="active"
+                [routerLinkActiveOptions]="{exact: true}" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">🏠</span> Dashboard
             </a>
-            <a routerLink="/leaves/apply" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
+
+            <!-- Apply Leave - Hidden for Super Admin -->
+            <a *ngIf="user.role !== 'SUPER_ADMIN'" routerLink="/leaves/apply" routerLinkActive="active" class="nav-item"
+                (click)="sidebarOpen = false">
                 <span class="icon">📝</span> Apply Leave
             </a>
 
@@ -40,6 +44,15 @@
             <a *ngIf="user.role === 'HR' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'"
                 routerLink="/comp-offs" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">🎁</span> Comp Offs
+            </a>
+            <a *ngIf="user.role === 'HR' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'"
+                routerLink="/leave-settings" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
+                <span class="icon">⚙️</span> Leave Settings
+            </a>
+
+            <!-- Public Holidays - Visible to All -->
+            <a routerLink="/public-holidays" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
+                <span class="icon">📅</span> Public Holidays
             </a>
 
             <!-- Admin Only -->

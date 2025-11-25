@@ -1,0 +1,254 @@
+// Main Layout SCSS  - Using inline variables to avoid import issues
+
+// Variables needed for this component
+$background-color: #FAFAFA;
+$sidebar-bg: #F8F8F8;
+$surface-color: #FFFFFF;
+$border-color: #E8E8E8;
+$text-primary: #1A1A1A;
+$text-secondary: #6B6B6B;
+$text-muted: #9E9E9E;
+$primary-color: #C5FF41;
+$dark-accent: #2D2D2D;
+$danger-text: #C62828;
+
+$spacing-md: 1rem;
+$spacing-lg: 1.5rem;
+$spacing-xl: 2rem;
+
+$radius: 8px;
+$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+$font-size-base: 14px;
+
+$transition-base: 0.2s ease;
+$transition-slow: 0.3s ease;
+
+$z-dropdown: 1000;
+$radius-round: 50%;
+
+.app-container {
+    display: flex;
+    height: 100vh;
+    background-color: $background-color;
+}
+
+.sidebar {
+    width: 270px;
+    background-color: $sidebar-bg;
+    border-right: 1px solid $border-color;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.sidebar-header {
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 $spacing-lg;
+    background: $sidebar-bg;
+    border-bottom: 1px solid $border-color;
+}
+
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    background-color: $text-primary;
+    color: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: $spacing-md;
+
+    svg {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+.app-name {
+    font-weight: $font-weight-bold;
+    font-size: 1.25rem;
+    color: $text-primary;
+    letter-spacing: -0.025em;
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: $spacing-lg $spacing-md;
+    overflow-y: auto;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.875rem $spacing-md;
+    color: $text-secondary;
+    text-decoration: none;
+    border-radius: $radius;
+    margin-bottom: 0.375rem;
+    font-weight: $font-weight-medium;
+    transition: all $transition-base;
+    cursor: pointer;
+    font-size: $font-size-base;
+
+    &:hover {
+        background: rgba(197, 255, 65, 0.08);
+        color: $text-primary;
+    }
+
+    &.active {
+        background: $primary-color;
+        color: $dark-accent;
+        font-weight: $font-weight-semibold;
+    }
+
+    .icon {
+        margin-right: 0.875rem;
+        font-size: 1.25rem;
+        width: 24px;
+        text-align: center;
+    }
+}
+
+.nav-divider {
+    margin: $spacing-lg 0 0.75rem $spacing-md;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: $text-muted;
+    font-weight: $font-weight-bold;
+    letter-spacing: 0.05em;
+}
+
+.sidebar-footer {
+    padding: $spacing-md;
+    border-top: 1px solid $border-color;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: $radius-round;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: $font-weight-semibold;
+    background: $primary-color;
+    color: $dark-accent;
+    margin-right: 0.75rem;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.user-name {
+    font-weight: $font-weight-semibold;
+    font-size: 0.9rem;
+    color: $text-primary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-role {
+    font-size: 0.75rem;
+    color: $text-secondary;
+}
+
+.logout-btn {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: $text-secondary;
+    border-radius: 0.375rem;
+    transition: all $transition-base;
+
+    &:hover {
+        background-color: #fef2f2;
+        color: $danger-text;
+    }
+
+    svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.topbar {
+    height: 64px;
+    background-color: $surface-color;
+    border-bottom: 1px solid $border-color;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 $spacing-xl;
+    box-shadow: $shadow-sm;
+}
+
+.page-title {
+    font-size: 1.25rem;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    margin: 0;
+}
+
+.content-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-xl;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        z-index: $z-dropdown;
+        transform: translateX(-100%);
+        transition: transform $transition-slow;
+
+        &.active {
+            transform: translateX(0);
+        }
+    }
+
+    .main-content {
+        width: 100%;
+    }
+
+    .topbar {
+        padding: 0 $spacing-md;
+    }
+
+    .content-wrapper {
+        padding: $spacing-md;
+    }
+}

@@ -1,0 +1,67 @@
+/* Approvals Page - Match Users Table Styling */
+.approvals-wrapper {
+    width: 100%;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+h2 {
+    color: #2c3e50;
+    margin: 0;
+}
+
+.loading,
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #7f8c8d;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Match users table styling */
+.table-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+/* Remove PrimeNG card styling when using table-card */
+::ng-deep .table-card .p-card {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+}
+
+::ng-deep .table-card .p-card .p-card-body {
+    padding: 0;
+}
+
+::ng-deep .table-card .p-card .p-card-content {
+    padding: 0;
+}
+
+/* Table styling to match users */
+::ng-deep .p-datatable .p-datatable-thead>tr>th {
+    background-color: #f8f9fa;
+    color: #7f8c8d;
+    font-weight: 600;
+    padding: 1rem;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+::ng-deep .p-datatable .p-datatable-tbody>tr>td {
+    padding: 1rem;
+    border-bottom: 1px solid #ecf0f1;
+}

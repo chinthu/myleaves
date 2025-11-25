@@ -1,84 +1,274 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../services/auth.service';
 
+import { TableModule } from 'primeng/table';
+import { CardModule } from 'primeng/card';
+import { TagModule } from 'primeng/tag';
+import { CalendarModule } from 'primeng/calendar';
+import { DropdownModule } from 'primeng/dropdown';
+import { ButtonModule } from 'primeng/button';
+import { ChartModule } from 'primeng/chart';
+
 @Component({
   selector: 'app-hr-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    TableModule,
+    CardModule,
+    TagModule,
+    CalendarModule,
+    DropdownModule,
+    ButtonModule,
+    ChartModule
+  ],
   templateUrl: './hr-dashboard.component.html',
-  styleUrls: ['./hr-dashboard.component.css']
+  styleUrls: ['./hr-dashboard.component.scss']
 })
 export class HrDashboardComponent implements OnInit {
   supabase: SupabaseClient;
   user: any = null;
-
-  // Stats
-  totalUsers = 0;
-  leavesToday = 0;
-  pendingRequests = 0;
-
-  // Lists
-  allLeaves: any[] = [];
   loading = true;
+
+  // Today's Leaves
+  todaysLeaves: any[] = [];
+  todayStats = { total: 0, casual: 0, medical: 0, compOff: 0 };
+
+  // All Leaves
+  allLeaves: any[] = [];
+  filteredLeaves: any[] = [];
+
+  // Quick Stats
+  totalUsers = 0;
+  pendingRequests = 0;
+  lowBalanceUsers = 0;
+
+  // Filters
+  dateRange: Date[] = [];
+  selectedStatus: string = 'ALL';
+  statusOptions = [
+    { label: 'All', value: 'ALL' },
+    { label: 'Pending', value: 'PENDING' },
+    { label: 'Approved', value: 'APPROVED' },
+    { label: 'Rejected', value: 'REJECTED' }
+  ];
+
+  // Charts
+  leaveTypeChart: any;
+  leaveStatusChart: any;
+  leaveTrendChart: any;
+  chartOptions: any;
 
   constructor(private authService: AuthService) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
 
-  ngOnInit() {
-    this.authService.currentUser$.subscribe(async (u) => {
-      if (u) {
-        this.user = await this.authService.getUserProfile();
-        if (this.user) {
-          this.loadStats();
-        }
-      }
-    });
+  async ngOnInit() {
+    this.user = await this.authService.getUserProfile();
+    if (this.user) {
+      await this.loadDashboardData();
+      this.setupCharts();
+    }
   }
 
-  async loadStats() {
+  async loadDashboardData() {
     this.loading = true;
     try {
-      // 1. Total Users
-      const { count: userCount } = await this.supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', this.user.organization_id);
-      this.totalUsers = userCount || 0;
-
-      // 2. Leaves Today
-      const today = new Date().toISOString().split('T')[0];
-      const { count: leavesTodayCount } = await this.supabase
-        .from('leaves')
-        .select('*', { count: 'exact', head: true })
-        .lte('start_date', today)
-        .gte('end_date', today)
-        .eq('status', 'APPROVED');
-      this.leavesToday = leavesTodayCount || 0;
-
-      // 3. Pending Requests (All)
-      const { count: pendingCount } = await this.supabase
-        .from('leaves')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'PENDING');
-      this.pendingRequests = pendingCount || 0;
-
-      // 4. All Leaves List
-      const { data: leaves } = await this.supabase
-        .from('leaves')
-        .select('*, users:user_id(full_name, email)')
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      this.allLeaves = leaves || [];
-
+      await Promise.all([
+        this.loadTodaysLeaves(),
+        this.loadAllLeaves(),
+        this.loadQuickStats()
+      ]);
     } catch (error) {
-      console.error('Error loading HR stats:', error);
+      console.error('Error loading dashboard:', error);
     } finally {
       this.loading = false;
+    }
+  }
+
+  async loadTodaysLeaves() {
+    const today = new Date().toISOString().split('T')[0];
+    const { data } = await this.supabase
+      .from('leaves')
+      .select('*, users:user_id(full_name, email)')
+      .lte('start_date', today)
+      .gte('end_date', today)
+      .eq('status', 'APPROVED')
+      .order('start_date');
+
+    this.todaysLeaves = data || [];
+
+    // Calculate stats
+    this.todayStats = {
+      total: this.todaysLeaves.length,
+      casual: this.todaysLeaves.filter(l => l.type === 'CASUAL').length,
+      medical: this.todaysLeaves.filter(l => l.type === 'MEDICAL').length,
+      compOff: this.todaysLeaves.filter(l => l.type === 'COMP_OFF').length
+    };
+  }
+
+  async loadAllLeaves() {
+    const { data } = await this.supabase
+      .from('leaves')
+      .select('*, users:user_id(full_name, email)')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    this.allLeaves = data || [];
+    this.applyFilters();
+  }
+
+  async loadQuickStats() {
+    // Total users
+    const { count: userCount } = await this.supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true });
+    this.totalUsers = userCount || 0;
+
+    // Pending requests
+    const { count: pendingCount } = await this.supabase
+      .from('leaves')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'PENDING');
+    this.pendingRequests = pendingCount || 0;
+
+    // Low balance users (less than 3 leaves)
+    const { count: lowBalanceCount } = await this.supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .or('balance_casual.lt.3,balance_medical.lt.3');
+    this.lowBalanceUsers = lowBalanceCount || 0;
+  }
+
+  setupCharts() {
+    // Leave Type Distribution (Pie Chart)
+    const typeCounts = {
+      casual: this.allLeaves.filter(l => l.type === 'CASUAL' && l.status === 'APPROVED').length,
+      medical: this.allLeaves.filter(l => l.type === 'MEDICAL' && l.status === 'APPROVED').length,
+      compOff: this.allLeaves.filter(l => l.type === 'COMP_OFF' && l.status === 'APPROVED').length
+    };
+
+    this.leaveTypeChart = {
+      labels: ['Casual Leave', 'Medical Leave', 'Comp Off'],
+      datasets: [{
+        data: [typeCounts.casual, typeCounts.medical, typeCounts.compOff],
+        backgroundColor: ['#667eea', '#f56565', '#48bb78']
+      }]
+    };
+
+    // Leave Status Distribution (Donut Chart)
+    const statusCounts = {
+      approved: this.allLeaves.filter(l => l.status === 'APPROVED').length,
+      pending: this.allLeaves.filter(l => l.status === 'PENDING').length,
+      rejected: this.allLeaves.filter(l => l.status === 'REJECTED').length
+    };
+
+    this.leaveStatusChart = {
+      labels: ['Approved', 'Pending', 'Rejected'],
+      datasets: [{
+        data: [statusCounts.approved, statusCounts.pending, statusCounts.rejected],
+        backgroundColor: ['#48bb78', '#ed8936', '#f56565']
+      }]
+    };
+
+    // Leave Trend (Last 6 months - Line Chart)
+    const last6Months = this.getLast6MonthsData();
+    this.leaveTrendChart = {
+      labels: last6Months.map(m => m.month),
+      datasets: [{
+        label: 'Leaves Taken',
+        data: last6Months.map(m => m.count),
+        borderColor: '#667eea',
+        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    };
+
+    this.chartOptions = {
+      plugins: {
+        legend: {
+          labels: {
+            font: {
+              family: 'Roboto'
+            }
+          }
+        }
+      }
+    };
+  }
+
+  getLast6MonthsData() {
+    const months = [];
+    const now = new Date();
+
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthName = date.toLocaleString('default', { month: 'short' });
+      const year = date.getFullYear();
+      const startDate = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+      const endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
+
+      const count = this.allLeaves.filter(l =>
+        l.start_date >= startDate &&
+        l.start_date <= endDate &&
+        l.status === 'APPROVED'
+      ).length;
+
+      months.push({ month: `${monthName} ${year}`, count });
+    }
+
+    return months;
+  }
+
+  applyFilters() {
+    let filtered = [...this.allLeaves];
+
+    // Status filter
+    if (this.selectedStatus !== 'ALL') {
+      filtered = filtered.filter(l => l.status === this.selectedStatus);
+    }
+
+    // Date range filter
+    if (this.dateRange && this.dateRange.length === 2 && this.dateRange[0] && this.dateRange[1]) {
+      const start = this.dateRange[0].toISOString().split('T')[0];
+      const end = this.dateRange[1].toISOString().split('T')[0];
+      filtered = filtered.filter(l => l.start_date >= start && l.start_date <= end);
+    }
+
+    this.filteredLeaves = filtered;
+  }
+
+  onFilterChange() {
+    this.applyFilters();
+  }
+
+  clearFilters() {
+    this.selectedStatus = 'ALL';
+    this.dateRange = [];
+    this.applyFilters();
+  }
+
+  getStatusSeverity(status: string): any {
+    switch (status) {
+      case 'APPROVED': return 'success';
+      case 'REJECTED': return 'danger';
+      case 'PENDING': return 'warning';
+      default: return 'info';
+    }
+  }
+
+  getTypeBadgeClass(type: string): string {
+    switch (type) {
+      case 'CASUAL': return 'badge-casual';
+      case 'MEDICAL': return 'badge-medical';
+      case 'COMP_OFF': return 'badge-compoff';
+      default: return '';
     }
   }
 }

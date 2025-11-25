@@ -4,13 +4,32 @@ import { FormsModule } from '@angular/forms';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../services/auth.service';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { DropdownModule } from 'primeng/dropdown';
+import { ToastModule } from 'primeng/toast';
+import { MessageService, SharedModule } from 'primeng/api';
+import { PickListModule } from 'primeng/picklist';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   selector: 'app-groups',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    DialogModule,
+    InputTextModule,
+    DropdownModule,
+    ToastModule
+  ],
+  providers: [MessageService],
   templateUrl: './groups.component.html',
-  styleUrls: ['./groups.component.css']
+  styleUrls: ['./groups.component.scss']
 })
 export class GroupsComponent implements OnInit {
   supabase: SupabaseClient;
@@ -38,6 +57,11 @@ export class GroupsComponent implements OnInit {
   message = '';
   error = '';
 
+  // Organization Filtering (Super Admin)
+  organizations: any[] = [];
+  selectedOrgId: string | null = null;
+  isSuperAdmin = false;
+
   constructor(private authService: AuthService) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
@@ -46,32 +70,66 @@ export class GroupsComponent implements OnInit {
     this.authService.currentUser$.subscribe(async (u) => {
       if (u) {
         this.currentUser = await this.authService.getUserProfile();
-        if (this.currentUser && this.currentUser.organization_id) {
-          this.formData.organization_id = this.currentUser.organization_id;
-          this.loadGroups();
-          this.loadUsers();
+        if (this.currentUser) {
+          this.isSuperAdmin = this.currentUser.role === 'SUPER_ADMIN';
+
+          if (this.isSuperAdmin) {
+            await this.loadOrganizations();
+            this.selectedOrgId = this.currentUser.organization_id || (this.organizations.length > 0 ? this.organizations[0].id : null);
+          } else {
+            this.selectedOrgId = this.currentUser.organization_id;
+          }
+
+          if (this.selectedOrgId) {
+            this.formData.organization_id = this.selectedOrgId;
+            this.loadGroups();
+            this.loadUsers();
+          }
         }
       }
     });
   }
 
+  async loadOrganizations() {
+    const { data } = await this.supabase
+      .from('organizations')
+      .select('id, name')
+      .order('name');
+    this.organizations = data || [];
+  }
+
+  onOrgChange() {
+    if (this.selectedOrgId) {
+      this.formData.organization_id = this.selectedOrgId;
+      this.loadGroups();
+      this.loadUsers();
+    }
+  }
+
   async loadGroups() {
+    if (!this.selectedOrgId) return;
+
     const { data, error } = await this.supabase
       .from('groups')
-      .select('*')
-      .eq('organization_id', this.currentUser.organization_id)
+      .select('*, group_members(count)')
+      .eq('organization_id', this.selectedOrgId)
       .order('name');
 
     if (data) {
-      this.groups = data;
+      this.groups = data.map((g: any) => ({
+        ...g,
+        members_count: g.group_members[0]?.count || 0
+      }));
     }
   }
 
   async loadUsers() {
+    if (!this.selectedOrgId) return;
+
     const { data } = await this.supabase
       .from('users')
       .select('id, full_name, email')
-      .eq('organization_id', this.currentUser.organization_id);
+      .eq('organization_id', this.selectedOrgId);
 
     if (data) {
       this.users = data;

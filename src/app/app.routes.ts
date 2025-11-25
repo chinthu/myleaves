@@ -10,6 +10,8 @@ import { CompOffsComponent } from './pages/comp-offs/comp-offs.component';
 import { UsersComponent } from './pages/users/users.component';
 import { GroupsComponent } from './pages/groups/groups.component';
 import { OrganizationsComponent } from './pages/organizations/organizations.component';
+import { PublicHolidaysComponent } from './pages/public-holidays/public-holidays.component';
+import { LeaveSettingsComponent } from './pages/leave-settings/leave-settings.component';
 
 export const routes: Routes = [
     { path: 'login', component: LoginComponent },
@@ -26,6 +28,16 @@ export const routes: Routes = [
             { path: 'users', component: UsersComponent },
             { path: 'groups', component: GroupsComponent },
             { path: 'organizations', component: OrganizationsComponent },
+            {
+                path: 'leave-settings',
+                loadComponent: () => import('./pages/leave-settings/leave-settings.component').then(m => m.LeaveSettingsComponent),
+                canActivate: [authGuard]
+            },
+            {
+                path: 'public-holidays',
+                loadComponent: () => import('./pages/public-holidays/public-holidays.component').then(m => m.PublicHolidaysComponent),
+                canActivate: [authGuard]
+            },
         ]
     },
     { path: '**', redirectTo: '' }

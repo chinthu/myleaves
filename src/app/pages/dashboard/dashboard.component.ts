@@ -15,7 +15,7 @@ import { ButtonModule } from 'primeng/button';
   standalone: true,
   imports: [CommonModule, RouterLink, TableModule, CardModule, TagModule, ButtonModule],
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.css']
+  styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
   supabase: SupabaseClient;
@@ -37,6 +37,37 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.loadUserData();
+    this.setupSubscriptions();
+  }
+
+  setupSubscriptions() {
+    // Subscribe to changes in leaves table
+    this.supabase
+      .channel('dashboard-leaves')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'leaves' },
+        (payload) => {
+          console.log('Leave change detected:', payload);
+          this.loadLeaves();
+          this.loadUserData(); // Reload user data to get updated balances
+        }
+      )
+      .subscribe();
+
+    // Subscribe to changes in users table (for balance updates)
+    this.supabase
+      .channel('dashboard-user')
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${this.user?.id}` },
+        (payload) => {
+          console.log('User balance updated:', payload);
+          if (payload.new) {
+            this.casualBalance = (payload.new as any).balance_casual;
+            this.medicalBalance = (payload.new as any).balance_medical;
+          }
+        }
+      )
+      .subscribe();
   }
 
   async loadUserData() {

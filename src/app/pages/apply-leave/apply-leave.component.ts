@@ -21,7 +21,7 @@ import { CardModule } from 'primeng/card';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, CalendarModule, DropdownModule, RadioButtonModule, InputTextareaModule, ToastModule, ButtonModule, CardModule],
   templateUrl: './apply-leave.component.html',
-  styleUrls: ['./apply-leave.component.css'],
+  styleUrls: ['./apply-leave.component.scss'],
   providers: [MessageService]
 })
 export class ApplyLeaveComponent implements OnInit {

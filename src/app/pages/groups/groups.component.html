@@ -1,85 +1,98 @@
 <div class="groups-container">
-    <div class="header">
-        <h2>Group Management</h2>
-        <button class="btn-primary" (click)="openAddModal()">+ Add Group</button>
+    <p-toast></p-toast>
+    <div class="header mb-4">
+        <div class="flex justify-content-between align-items-center">
+            <div class="flex gap-3 align-items-center">
+                <h2 class="m-0">Group Management</h2>
+                <p-dropdown *ngIf="isSuperAdmin" [options]="organizations" [(ngModel)]="selectedOrgId"
+                    optionLabel="name" optionValue="id" (onChange)="onOrgChange()" placeholder="Select Organization"
+                    styleClass="w-15rem">
+                </p-dropdown>
+            </div>
+            <button pButton label="Add Group" icon="pi pi-plus" (click)="openAddModal()"></button>
+        </div>
     </div>
 
-    <div class="groups-grid">
-        <div class="group-card" *ngFor="let group of groups">
-            <div class="group-header">
-                <h3>{{ group.name }}</h3>
-                <div class="actions">
-                    <button class="btn-icon" (click)="openEditModal(group)" title="Edit Name">✏️</button>
-                    <button class="btn-icon" (click)="openMembersModal(group)" title="Manage Members">👥</button>
-                </div>
-            </div>
-            <div class="group-footer">
-                <button class="btn-link" (click)="openMembersModal(group)">Manage Members</button>
-            </div>
-        </div>
+    <div class="card">
+        <p-table [value]="groups" [loading]="loading" [rows]="10" [paginator]="true" responsiveLayout="scroll">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th pSortableColumn="name">Group Name <p-sortIcon field="name"></p-sortIcon></th>
+                    <th>Members</th>
+                    <th>Actions</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-group>
+                <tr>
+                    <td>{{ group.name }}</td>
+                    <td>{{ group.members_count || 0 }} members</td>
+                    <td>
+                        <div class="flex gap-2">
+                            <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text"
+                                (click)="openEditModal(group)"></button>
+                            <button pButton icon="pi pi-users" class="p-button-rounded p-button-text"
+                                (click)="openMembersModal(group)"></button>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="3" class="text-center p-4">No groups found.</td>
+                </tr>
+            </ng-template>
+        </p-table>
     </div>
 
     <!-- Add/Edit Group Modal -->
-    <div class="modal-overlay" *ngIf="showModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>{{ isEditing ? 'Edit Group' : 'Create New Group' }}</h3>
-                <button class="close-btn" (click)="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div *ngIf="message" class="alert alert-success">{{ message }}</div>
-                <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-                <form (ngSubmit)="saveGroup()">
-                    <div class="form-group">
-                        <label>Group Name</label>
-                        <input type="text" name="name" [(ngModel)]="formData.name" required
-                            placeholder="e.g. Engineering Team">
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn-secondary" (click)="closeModal()">Cancel</button>
-                        <button type="submit" class="btn-primary" [disabled]="loading">
-                            {{ loading ? 'Saving...' : 'Save' }}
-                        </button>
-                    </div>
-                </form>
-            </div>
+    <p-dialog [(visible)]="showModal" [header]="isEditing ? 'Edit Group' : 'Create New Group'" [modal]="true"
+        [style]="{width: '400px'}" styleClass="p-fluid">
+        <div class="field">
+            <label for="name">Group Name</label>
+            <input pInputText id="name" [(ngModel)]="formData.name" required placeholder="e.g. Engineering Team" />
         </div>
-    </div>
+        <ng-template pTemplate="footer">
+            <button pButton label="Cancel" icon="pi pi-times" class="p-button-text" (click)="closeModal()"></button>
+            <button pButton label="Save" icon="pi pi-check" (click)="saveGroup()" [loading]="loading"></button>
+        </ng-template>
+    </p-dialog>
 
     <!-- Manage Members Modal -->
-    <div class="modal-overlay" *ngIf="showMembersModal">
-        <div class="modal members-modal">
-            <div class="modal-header">
-                <h3>Members: {{ selectedGroup?.name }}</h3>
-                <button class="close-btn" (click)="closeMembersModal()">&times;</button>
-            </div>
-            <div class="modal-body members-body">
-                <div class="members-lists">
-                    <!-- Current Members -->
-                    <div class="list-column">
-                        <h4>Current Members ({{ groupMembers.length }})</h4>
-                        <div class="user-list">
-                            <div class="user-item" *ngFor="let m of groupMembers">
-                                <span>{{ m.full_name }}</span>
-                                <button class="btn-sm btn-danger" (click)="removeMember(m.id)">Remove</button>
-                            </div>
-                            <div *ngIf="groupMembers.length === 0" class="empty-text">No members yet.</div>
-                        </div>
-                    </div>
+    <p-dialog [(visible)]="showMembersModal" [header]="'Members: ' + selectedGroup?.name" [modal]="true"
+        [style]="{width: '800px'}" styleClass="p-fluid">
 
-                    <!-- Available Users -->
-                    <div class="list-column">
-                        <h4>Add Members</h4>
-                        <div class="user-list">
-                            <div class="user-item" *ngFor="let u of nonMembers">
-                                <span>{{ u.full_name }}</span>
-                                <button class="btn-sm btn-success" (click)="addMember(u.id)">Add</button>
-                            </div>
-                            <div *ngIf="nonMembers.length === 0" class="empty-text">No more users to add.</div>
-                        </div>
+        <div class="grid">
+            <div class="col-12 md:col-6">
+                <h4>Current Members</h4>
+                <div class="border-1 surface-border border-round p-3" style="height: 300px; overflow-y: auto;">
+                    <div *ngFor="let m of groupMembers"
+                        class="flex align-items-center justify-content-between mb-2 p-2 surface-ground border-round">
+                        <span>{{ m.full_name }}</span>
+                        <button pButton icon="pi pi-times"
+                            class="p-button-rounded p-button-danger p-button-text p-button-sm"
+                            (click)="removeMember(m.id)"></button>
                     </div>
+                    <div *ngIf="groupMembers.length === 0" class="text-500 text-center mt-4">No members yet.</div>
+                </div>
+            </div>
+
+            <div class="col-12 md:col-6">
+                <h4>Add Members</h4>
+                <div class="border-1 surface-border border-round p-3" style="height: 300px; overflow-y: auto;">
+                    <div *ngFor="let u of nonMembers"
+                        class="flex align-items-center justify-content-between mb-2 p-2 surface-ground border-round">
+                        <span>{{ u.full_name }}</span>
+                        <button pButton icon="pi pi-plus"
+                            class="p-button-rounded p-button-success p-button-text p-button-sm"
+                            (click)="addMember(u.id)"></button>
+                    </div>
+                    <div *ngIf="nonMembers.length === 0" class="text-500 text-center mt-4">No more users to add.</div>
                 </div>
             </div>
         </div>
-    </div>
+
+        <ng-template pTemplate="footer">
+            <button pButton label="Close" icon="pi pi-check" (click)="closeMembersModal()"></button>
+        </ng-template>
+    </p-dialog>
 </div>

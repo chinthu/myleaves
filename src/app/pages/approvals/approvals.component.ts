@@ -17,7 +17,7 @@ import { CardModule } from 'primeng/card';
   standalone: true,
   imports: [CommonModule, TableModule, ButtonModule, TagModule, ToastModule, CardModule],
   templateUrl: './approvals.component.html',
-  styleUrls: ['./approvals.component.css'],
+  styleUrls: ['./approvals.component.scss'],
   providers: [MessageService]
 })
 export class ApprovalsComponent implements OnInit {
