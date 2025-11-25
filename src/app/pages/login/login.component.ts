@@ -94,6 +94,23 @@ export class LoginComponent implements OnInit {
         );
 
         if (error) throw error;
+
+        // Wait for profile to load and then route based on role
+        // Note: loadUserProfile is called with showLoading=false because onAuthStateChange
+        // already handles the loading state, and we don't want duplicate loading indicators
+        if (data?.user) {
+          const profile = await this.authService.loadUserProfile(data.user.id, false);
+          if (profile) {
+            if (profile.role === 'SUPER_ADMIN' || profile.role === 'HR') {
+              this.router.navigate(['/hr-dashboard']);
+            } else {
+              this.router.navigate(['/']);
+            }
+          } else {
+            // If profile not found, default to dashboard
+            this.router.navigate(['/']);
+          }
+        }
       }
     } catch (error: any) {
       this.messages = [{

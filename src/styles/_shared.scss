@@ -1,38 +1,69 @@
-// Shared SCSS Variables & Mixins - Import this in component SCSS files
-// Use: @import '/src/styles/_shared.scss';
+// ============================================
+// SHARED SCSS LIBRARY
+// Import this in component SCSS files: @import '/src/styles/_shared.scss';
+// ============================================
 
-// All variables and mixins from the main styles.scss
-// This file exists so components can access variables and mixins without importing everything
+// ============================================
+// VARIABLES - Colors
+// ============================================
 
+// Primary Colors
 $primary-color: #C5FF41;
 $primary-dark: #B0E838;
+$primary-light: #E8FFA3;
+$primary-gradient: linear-gradient(135deg, #C5FF41 0%, #B0E838 100%);
+
+// Background & Surface Colors
 $background-color: #FAFAFA;
 $surface-color: #FFFFFF;
 $sidebar-bg: #F8F8F8;
+$card-bg: #FFFFFF;
+
+// Text Colors
 $text-primary: #1A1A1A;
 $text-secondary: #6B6B6B;
 $text-muted: #9E9E9E;
 $text-light: #BDBDBD;
 $text-black: #000000;
+$text-white: #FFFFFF;
+
+// Border Colors
 $border-color: #E8E8E8;
 $border-light: #F0F0F0;
+$border-dark: #D0D0D0;
+
+// Status Colors
 $success-bg: #E8F5E9;
 $success-text: #2E7D32;
+$success-border: #A5D6A7;
 $danger-bg: #FFEBEE;
 $danger-text: #C62828;
+$danger-border: #EF9A9A;
 $warning-bg: #FFF3E0;
 $warning-text: #EF6C00;
+$warning-border: #FFCC80;
 $info-bg: #E3F2FD;
 $info-text: #1565C0;
+$info-border: #90CAF9;
+
+// Dark Accent
 $dark-accent: #2D2D2D;
 $dark-accent-hover: #1F1F1F;
 
+// ============================================
+// VARIABLES - Spacing
+// ============================================
 $spacing-xs: 0.25rem;
 $spacing-sm: 0.5rem;
 $spacing-md: 1rem;
 $spacing-lg: 1.5rem;
 $spacing-xl: 2rem;
+$spacing-2xl: 3rem;
+$spacing-3xl: 4rem;
 
+// ============================================
+// VARIABLES - Border Radius
+// ============================================
 $radius: 8px;
 $radius-sm: 4px;
 $radius-md: 12px;
@@ -40,10 +71,17 @@ $radius-lg: 16px;
 $radius-xl: 20px;
 $radius-round: 50%;
 
+// ============================================
+// VARIABLES - Shadows
+// ============================================
 $shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
 $shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
 $shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.12);
+$shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.15);
 
+// ============================================
+// VARIABLES - Typography
+// ============================================
 $font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 $font-size-xs: 11px;
 $font-size-sm: 13px;
@@ -52,18 +90,46 @@ $font-size-md: 16px;
 $font-size-lg: 18px;
 $font-size-xl: 22px;
 $font-size-2xl: 28px;
+$font-size-3xl: 36px;
+
 $font-weight-light: 300;
 $font-weight-normal: 400;
 $font-weight-medium: 500;
 $font-weight-semibold: 600;
 $font-weight-bold: 700;
 
+$line-height-tight: 1.2;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.75;
+
+// ============================================
+// VARIABLES - Transitions
+// ============================================
 $transition-fast: 0.15s ease;
 $transition-base: 0.2s ease;
 $transition-slow: 0.3s ease;
 
+// ============================================
+// VARIABLES - Z-Index
+// ============================================
 $z-dropdown: 1000;
+$z-sticky: 1010;
 $z-modal: 1050;
+$z-tooltip: 1060;
+$z-overlay: 9999;
+
+// ============================================
+// VARIABLES - Breakpoints
+// ============================================
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+$breakpoint-2xl: 1400px;
+
+// ============================================
+// MIXINS - Layout
+// ============================================
 
 @mixin card {
     background: $surface-color;
@@ -90,6 +156,22 @@ $z-modal: 1050;
     flex-direction: column;
 }
 
+@mixin flex-start {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+@mixin flex-end {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+// ============================================
+// MIXINS - Effects
+// ============================================
+
 @mixin hover-lift {
     transition: all $transition-base;
 
@@ -99,11 +181,46 @@ $z-modal: 1050;
     }
 }
 
+@mixin hover-scale($scale: 1.05) {
+    transition: transform $transition-base;
+
+    &:hover {
+        transform: scale($scale);
+    }
+}
+
+@mixin transition($properties...) {
+    transition-property: $properties;
+    transition-duration: $transition-base;
+    transition-timing-function: ease;
+}
+
+// ============================================
+// MIXINS - Text
+// ============================================
+
 @mixin truncate {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+@mixin truncate-lines($lines: 2) {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+@mixin text-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+// ============================================
+// MIXINS - Buttons
+// ============================================
 
 @mixin button-reset {
     background: none;
@@ -111,7 +228,25 @@ $z-modal: 1050;
     padding: 0;
     cursor: pointer;
     font-family: inherit;
+    font-size: inherit;
+    color: inherit;
 }
+
+@mixin button-base {
+    @include button-reset;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $radius;
+    font-weight: $font-weight-medium;
+    transition: all $transition-base;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+}
+
+// ============================================
+// MIXINS - Components
+// ============================================
 
 @mixin avatar($size: 32px) {
     width: $size;
@@ -122,10 +257,169 @@ $z-modal: 1050;
     justify-content: center;
     font-weight: $font-weight-semibold;
     flex-shrink: 0;
+    background: $border-light;
+    color: $text-secondary;
 }
 
+@mixin badge($bg-color, $text-color) {
+    display: inline-block;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $radius-sm;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    background: $bg-color;
+    color: $text-color;
+}
+
+@mixin input-base {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    border: 1px solid $border-color;
+    border-radius: $radius;
+    font-size: $font-size-base;
+    font-family: $font-family;
+    color: $text-primary;
+    background: $surface-color;
+    transition: all $transition-base;
+
+    &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 3px rgba(197, 255, 65, 0.1);
+    }
+
+    &::placeholder {
+        color: $text-muted;
+    }
+}
+
+// ============================================
+// MIXINS - Responsive
+// ============================================
+
 @mixin mobile {
-    @media (max-width: 768px) {
+    @media (max-width: #{$breakpoint-md - 1px}) {
         @content;
+    }
+}
+
+@mixin tablet {
+    @media (min-width: $breakpoint-md) and (max-width: #{$breakpoint-lg - 1px}) {
+        @content;
+    }
+}
+
+@mixin desktop {
+    @media (min-width: $breakpoint-lg) {
+        @content;
+    }
+}
+
+@mixin responsive($breakpoint) {
+    @if $breakpoint == sm {
+        @media (min-width: $breakpoint-sm) {
+            @content;
+        }
+    } @else if $breakpoint == md {
+        @media (min-width: $breakpoint-md) {
+            @content;
+        }
+    } @else if $breakpoint == lg {
+        @media (min-width: $breakpoint-lg) {
+            @content;
+        }
+    } @else if $breakpoint == xl {
+        @media (min-width: $breakpoint-xl) {
+            @content;
+        }
+    }
+}
+
+// ============================================
+// UTILITY CLASSES
+// ============================================
+
+// Common component classes that can be reused
+.stat-card {
+    @include card;
+    @include flex-start;
+    gap: $spacing-lg;
+    @include hover-lift;
+}
+
+.section-card {
+    @include card;
+    margin-bottom: $spacing-xl;
+}
+
+.section-header {
+    @include flex-between;
+    margin-bottom: $spacing-lg;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+
+    h2 {
+        margin: 0;
+        font-size: $font-size-xl;
+        font-weight: $font-weight-semibold;
+        color: $text-primary;
+    }
+}
+
+.badge {
+    @include badge($info-bg, $info-text);
+}
+
+.badge-casual {
+    @include badge(#e0e7ff, #4338ca);
+}
+
+.badge-medical {
+    @include badge(#fee2e2, #b91c1c);
+}
+
+.badge-compoff {
+    @include badge(#dcfce7, #15803d);
+}
+
+.badge-success {
+    @include badge($success-bg, $success-text);
+}
+
+.badge-danger {
+    @include badge($danger-bg, $danger-text);
+}
+
+.badge-warning {
+    @include badge($warning-bg, $warning-text);
+}
+
+.badge-info {
+    @include badge($info-bg, $info-text);
+}
+
+// Grid utilities
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: $spacing-lg;
+    margin-bottom: $spacing-xl;
+}
+
+// Empty state
+.empty-state {
+    text-align: center;
+    padding: $spacing-3xl $spacing-xl;
+    color: $text-muted;
+
+    i {
+        font-size: 3rem;
+        margin-bottom: $spacing-md;
+        color: $text-light;
+    }
+
+    p {
+        margin: 0;
+        font-size: $font-size-md;
     }
 }

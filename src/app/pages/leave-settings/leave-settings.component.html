@@ -63,14 +63,17 @@
             </div>
 
             <p>
-                Apply these default settings to all existing users in the organization.
-                <strong>Warning:</strong> This will overwrite current balances for everyone.
+                <strong>Warning:</strong> This will permanently delete ALL leaves (pending, approved, cancelled) and reset all leave balances to default values for all users in the selected organization.
+            </p>
+            <p style="color: #f56565; font-weight: 600; margin-top: 0.5rem;">
+                This action CANNOT be undone!
             </p>
 
             <div class="actions-footer">
-                <p-button label="Reset All Users to Defaults" icon="pi pi-refresh" styleClass="p-button-danger"
+                <p-button label="Reset All Leaves & Balances" icon="pi pi-refresh" styleClass="p-button-danger"
                     (onClick)="bulkUpdateUsers()" [loading]="loading"></p-button>
             </div>
+            <p-confirmDialog></p-confirmDialog>
         </p-card>
     </div>
 </div>

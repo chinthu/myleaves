@@ -1,41 +1,60 @@
+@import '../../../styles/_shared.scss';
+
 /* HR Dashboard Styling */
 .hr-dashboard-wrapper {
     max-width: 1400px;
     margin: 0 auto;
+    padding: 2rem;
     padding-bottom: 2rem;
+}
+
+.dashboard-header {
+    margin-bottom: $spacing-xl;
+
+    h1 {
+        margin: 0;
+        font-size: $font-size-2xl;
+        font-weight: $font-weight-bold;
+        color: $text-primary;
+    }
+
+    p {
+        margin: 0.5rem 0 0 0;
+        color: $text-secondary;
+        font-size: $font-size-base;
+    }
 }
 
 /* Stats Grid */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    gap: $spacing-lg;
+    margin-bottom: $spacing-xl;
 }
 
 .stat-card {
-    background: white;
+    background: $surface-color;
+    border-radius: $radius-lg;
     padding: 1.5rem;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+    box-shadow: $shadow-sm;
+    border: 1px solid $border-light;
     display: flex;
     align-items: center;
-    gap: 1.5rem;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
+    gap: $spacing-lg;
+    transition: transform $transition-base, box-shadow $transition-base;
 
-.stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: $shadow-md;
+    }
 }
 
 .stat-icon {
     width: 60px;
     height: 60px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    border-radius: $radius-round;
+    @include flex-center;
     color: white;
     font-size: 1.5rem;
     flex-shrink: 0;
@@ -47,39 +66,25 @@
 
 .stat-value {
     font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--text-main);
-    line-height: 1.2;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+    line-height: $line-height-tight;
 }
 
 .stat-label {
-    color: var(--text-muted);
-    font-size: 0.875rem;
-    font-weight: 500;
+    color: $text-secondary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    margin-top: $spacing-xs;
 }
 
-/* Section Cards */
+/* Section Cards - Uses shared library */
 .section-card {
-    background: white;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    padding: 1.5rem;
-    margin-bottom: 2rem;
+    @extend .section-card;
 }
 
 .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.section-header h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    color: var(--text-main);
+    @extend .section-header;
 }
 
 /* Today's Leaves Breakdown */
@@ -200,38 +205,57 @@
     color: var(--text-secondary);
 }
 
-/* Badges */
+/* Badges - Uses shared library */
 .badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
+    @extend .badge;
 }
 
 .badge-casual {
-    background: #e0e7ff;
-    color: #4338ca;
+    @extend .badge-casual;
 }
 
 .badge-medical {
-    background: #fee2e2;
-    color: #b91c1c;
+    @extend .badge-medical;
 }
 
 .badge-compoff {
-    background: #dcfce7;
-    color: #15803d;
+    @extend .badge-compoff;
 }
 
-/* Empty State */
+/* Empty State - Uses shared library */
 .empty-state {
-    text-align: center;
-    padding: 3rem;
-    color: var(--text-muted);
+    @extend .empty-state;
 }
 
-.empty-state i {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    color: var(--success-color);
+/* Dialog Form Styling */
+:host ::ng-deep {
+    .p-dialog {
+        .p-dialog-content {
+            .flex.flex-column {
+                gap: 1rem;
+            }
+
+            label {
+                font-weight: $font-weight-medium;
+                color: $text-primary;
+                font-size: $font-size-sm;
+                margin-bottom: 0.5rem;
+                display: block;
+            }
+
+            input[type="checkbox"] {
+                width: 18px;
+                height: 18px;
+                cursor: pointer;
+                margin-right: 0.5rem;
+            }
+
+            .flex.align-items-center {
+                label {
+                    margin-bottom: 0;
+                    cursor: pointer;
+                }
+            }
+        }
+    }
 }

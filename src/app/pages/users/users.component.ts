@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../services/auth.service';
+import { LoadingService } from '../../services/loading.service';
 import { Subject, takeUntil } from 'rxjs';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -13,6 +14,9 @@ import { DropdownModule } from 'primeng/dropdown';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { LeaveService } from '../../services/leave.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-users',
@@ -26,7 +30,8 @@ import { TagModule } from 'primeng/tag';
     InputTextModule,
     DropdownModule,
     ToastModule,
-    TagModule
+    TagModule,
+    TooltipModule
   ],
   providers: [MessageService],
   templateUrl: './users.component.html',
@@ -59,6 +64,14 @@ export class UsersComponent implements OnInit, OnDestroy {
   organizations: any[] = [];
   selectedOrgId: string | null = null;
   isSuperAdmin = false;
+  
+  // Leave Stats View
+  showLeaveStats = false;
+  selectedYear: number = new Date().getFullYear();
+  availableYears: any[] = [];
+  userLeaveStats: any[] = [];
+  loadingStats = false;
+  
   private destroy$ = new Subject<void>();
 
   roles = [
@@ -78,8 +91,22 @@ export class UsersComponent implements OnInit, OnDestroy {
     }
   }
 
-  constructor(private authService: AuthService) {
+  constructor(
+    private authService: AuthService,
+    private loadingService: LoadingService,
+    private leaveService: LeaveService,
+    private messageService: MessageService,
+    private router: Router
+  ) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
+    
+    // Generate available years
+    const currentYear = new Date().getFullYear();
+    this.availableYears = [
+      { label: currentYear.toString(), value: currentYear },
+      { label: (currentYear - 1).toString(), value: currentYear - 1 },
+      { label: (currentYear - 2).toString(), value: currentYear - 2 }
+    ];
   }
 
   ngOnInit() {
@@ -107,11 +134,16 @@ export class UsersComponent implements OnInit, OnDestroy {
   }
 
   async loadOrganizations() {
-    const { data } = await this.supabase
-      .from('organizations')
-      .select('id, name')
-      .order('name');
-    this.organizations = data || [];
+    this.loadingService.show();
+    try {
+      const { data } = await this.supabase
+        .from('organizations')
+        .select('id, name')
+        .order('name');
+      this.organizations = data || [];
+    } finally {
+      this.loadingService.hide();
+    }
   }
 
   onOrgChange() {
@@ -124,14 +156,19 @@ export class UsersComponent implements OnInit, OnDestroy {
   async loadUsers() {
     if (!this.selectedOrgId) return;
 
-    const { data, error } = await this.supabase
-      .from('users')
-      .select('*, organizations(name)')
-      .eq('organization_id', this.selectedOrgId)
-      .order('created_at', { ascending: false });
+    this.loadingService.show();
+    try {
+      const { data, error } = await this.supabase
+        .from('users')
+        .select('*, organizations(name)')
+        .eq('organization_id', this.selectedOrgId)
+        .order('created_at', { ascending: false });
 
-    if (data) {
-      this.users = data;
+      if (data) {
+        this.users = data;
+      }
+    } finally {
+      this.loadingService.hide();
     }
   }
 
@@ -242,6 +279,49 @@ export class UsersComponent implements OnInit, OnDestroy {
     } finally {
       this.loading = false;
     }
+  }
+
+  async loadUserLeaveStats() {
+    if (!this.selectedOrgId) return;
+    
+    this.loadingStats = true;
+    try {
+      const { data, error } = await this.leaveService.getAllUsersLeaveStats(this.selectedOrgId, this.selectedYear);
+      
+      if (error) {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load leave statistics.' });
+        return;
+      }
+      
+      // Get comp off balances for each user
+      for (const userStat of data || []) {
+        const { data: compOffBalance } = await this.leaveService.getUserCompOffBalance(userStat.id);
+        (userStat as any).remainingCompOffs = compOffBalance || 0;
+      }
+      
+      this.userLeaveStats = data || [];
+    } catch (error: any) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message || 'Failed to load leave statistics.' });
+    } finally {
+      this.loadingStats = false;
+    }
+  }
+
+  toggleLeaveStats() {
+    this.showLeaveStats = !this.showLeaveStats;
+    if (this.showLeaveStats) {
+      this.loadUserLeaveStats();
+    }
+  }
+
+  onYearChange() {
+    if (this.showLeaveStats) {
+      this.loadUserLeaveStats();
+    }
+  }
+
+  viewUserDashboard(user: any) {
+    this.router.navigate(['/user-dashboard', user.id]);
   }
 
   ngOnDestroy() {

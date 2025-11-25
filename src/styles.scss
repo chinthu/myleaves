@@ -330,6 +330,130 @@ button {
     border-bottom: none !important;
 }
 
+// Dialog Overrides
+.p-dialog {
+    border-radius: $radius-lg !important;
+    box-shadow: $shadow-xl !important;
+}
+
+.p-dialog .p-dialog-header {
+    background: $surface-color !important;
+    border-bottom: 1px solid $border-light !important;
+    padding: $spacing-lg !important;
+    border-radius: $radius-lg $radius-lg 0 0 !important;
+}
+
+.p-dialog .p-dialog-header .p-dialog-title {
+    font-size: $font-size-xl !important;
+    font-weight: $font-weight-semibold !important;
+    color: $text-primary !important;
+}
+
+.p-dialog .p-dialog-header .p-dialog-header-icon {
+    width: 2rem !important;
+    height: 2rem !important;
+    border-radius: $radius !important;
+    transition: all $transition-base !important;
+}
+
+.p-dialog .p-dialog-header .p-dialog-header-icon:hover {
+    background: $border-light !important;
+}
+
+.p-dialog .p-dialog-content {
+    padding: $spacing-lg !important;
+    background: $surface-color !important;
+}
+
+.p-dialog .p-dialog-footer {
+    background: $surface-color !important;
+    border-top: 1px solid $border-light !important;
+    padding: $spacing-lg !important;
+    border-radius: 0 0 $radius-lg $radius-lg !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: $spacing-sm !important;
+}
+
+.p-dialog-mask {
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(2px);
+}
+
+// Calendar Overrides
+.p-calendar {
+    width: 100% !important;
+}
+
+.p-calendar .p-inputtext {
+    width: 100% !important;
+}
+
+.p-calendar .p-datepicker-trigger {
+    background: $border-light !important;
+    border: 1px solid $border-color !important;
+    border-left: none !important;
+    border-radius: 0 $radius $radius 0 !important;
+    color: $text-secondary !important;
+    transition: all $transition-base !important;
+}
+
+.p-calendar .p-datepicker-trigger:hover {
+    background: $border-color !important;
+    color: $text-primary !important;
+}
+
+// Textarea Overrides
+.p-inputtextarea {
+    width: 100% !important;
+    padding: $spacing-sm $spacing-md !important;
+    border-radius: $radius !important;
+    border: 1px solid $border-color !important;
+    font-size: $font-size-base !important;
+    font-family: $font-family !important;
+    color: $text-primary !important;
+    resize: vertical !important;
+    transition: all $transition-base !important;
+}
+
+.p-inputtextarea:focus {
+    outline: none !important;
+    border-color: $primary-color !important;
+    box-shadow: 0 0 0 3px rgba(197, 255, 65, 0.1) !important;
+}
+
+// Checkbox Overrides
+.p-checkbox {
+    width: 18px !important;
+    height: 18px !important;
+}
+
+.p-checkbox .p-checkbox-box {
+    border: 2px solid $border-color !important;
+    border-radius: $radius-sm !important;
+    width: 18px !important;
+    height: 18px !important;
+    transition: all $transition-base !important;
+}
+
+.p-checkbox .p-checkbox-box.p-highlight {
+    background: $dark-accent !important;
+    border-color: $dark-accent !important;
+}
+
+.p-checkbox .p-checkbox-box:hover {
+    border-color: $text-secondary !important;
+}
+
+// Label styling
+label {
+    display: block;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+    margin-bottom: $spacing-sm;
+    font-size: $font-size-sm;
+}
+
 // Tag Overrides
 .p-tag {
     border-radius: $radius-md !important;
@@ -412,4 +536,77 @@ button {
 
 .font-bold {
     font-weight: $font-weight-bold;
+}
+
+// ============================================
+// NG-SELECT STYLING
+// ============================================
+
+.ng-select {
+    width: 100%;
+}
+
+.ng-select .ng-select-container {
+    border-radius: $radius !important;
+    border: 1px solid $border-color !important;
+    min-height: 42px !important;
+    transition: all $transition-base !important;
+}
+
+.ng-select.ng-select-focused .ng-select-container {
+    border-color: $primary-color !important;
+    box-shadow: 0 0 0 3px rgba(197, 255, 65, 0.1) !important;
+}
+
+.ng-select .ng-select-container:hover {
+    border-color: $text-secondary !important;
+}
+
+.ng-select .ng-value-container {
+    padding: 8px 12px !important;
+}
+
+.ng-select .ng-placeholder {
+    color: $text-muted !important;
+    font-size: $font-size-base !important;
+}
+
+.ng-select .ng-value {
+    color: $text-primary !important;
+    font-size: $font-size-base !important;
+}
+
+.ng-select .ng-arrow-wrapper {
+    padding-right: 8px !important;
+}
+
+.ng-select .ng-arrow {
+    border-color: $text-secondary transparent transparent !important;
+}
+
+.ng-select.ng-select-opened .ng-arrow {
+    border-color: transparent transparent $text-secondary !important;
+}
+
+.ng-dropdown-panel {
+    border-radius: $radius !important;
+    border: 1px solid $border-color !important;
+    box-shadow: $shadow-md !important;
+    background: $surface-color !important;
+}
+
+.ng-dropdown-panel .ng-option {
+    padding: 10px 12px !important;
+    color: $text-primary !important;
+    transition: background-color $transition-fast !important;
+}
+
+.ng-dropdown-panel .ng-option:hover,
+.ng-dropdown-panel .ng-option.ng-option-marked {
+    background: $border-light !important;
+}
+
+.ng-dropdown-panel .ng-option.ng-option-selected {
+    background: rgba(197, 255, 65, 0.1) !important;
+    color: $text-primary !important;
 }

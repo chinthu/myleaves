@@ -10,6 +10,9 @@ import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { DropdownModule } from 'primeng/dropdown';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
+import { LoadingService } from '../../services/loading.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -23,9 +26,10 @@ import { takeUntil } from 'rxjs/operators';
     CardModule,
     ButtonModule,
     InputNumberModule,
-    DropdownModule
+    DropdownModule,
+    ConfirmDialogModule
   ],
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './leave-settings.component.html',
   styleUrls: ['./leave-settings.component.scss']
 })
@@ -55,7 +59,9 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
 
   constructor(
     private authService: AuthService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private confirmationService: ConfirmationService,
+    private loadingService: LoadingService
   ) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
@@ -166,13 +172,52 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
   }
 
   async bulkUpdateUsers() {
-    if (!confirm('Are you sure? This will reset leave balances for ALL users in this organization to the current default values. This cannot be undone.')) {
+    this.confirmationService.confirm({
+      message: 'Are you sure you want to reset all leaves and balances for ALL users in this organization? This will:\n\n1. Delete ALL leaves (pending, approved, cancelled)\n2. Reset all leave balances to default values\n\nThis action CANNOT be undone!',
+      header: 'Reset All Leaves and Balances',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: async () => {
+        await this.performReset();
+      }
+    });
+  }
+
+  async performReset() {
+    if (!this.selectedOrgId) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Please select an organization' });
       return;
     }
 
     this.loading = true;
+    this.loadingService.show();
+    
     try {
-      const { error } = await this.supabase
+      // Step 1: Get all user IDs in the organization
+      const { data: users, error: usersError } = await this.supabase
+        .from('users')
+        .select('id')
+        .eq('organization_id', this.selectedOrgId);
+
+      if (usersError) throw usersError;
+
+      if (!users || users.length === 0) {
+        this.messageService.add({ severity: 'warn', summary: 'No Users', detail: 'No users found in this organization' });
+        return;
+      }
+
+      const userIds = users.map(u => u.id);
+
+      // Step 2: Delete all leaves for these users
+      const { error: leavesError } = await this.supabase
+        .from('leaves')
+        .delete()
+        .in('user_id', userIds);
+
+      if (leavesError) throw leavesError;
+
+      // Step 3: Reset all user balances to default values
+      const { error: updateError } = await this.supabase
         .from('users')
         .update({
           balance_casual: this.settings.default_casual_leaves,
@@ -180,13 +225,23 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
         })
         .eq('organization_id', this.selectedOrgId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      this.messageService.add({ severity: 'success', summary: 'Bulk Update Complete', detail: 'All users have been updated to new defaults.' });
+      this.messageService.add({ 
+        severity: 'success', 
+        summary: 'Reset Complete', 
+        detail: `Successfully deleted all leaves and reset balances for ${users.length} user(s) in this organization.` 
+      });
     } catch (error: any) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message });
+      console.error('Reset error:', error);
+      this.messageService.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: error.message || 'Failed to reset leaves and balances' 
+      });
     } finally {
       this.loading = false;
+      this.loadingService.hide();
     }
   }
 

@@ -48,6 +48,18 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
             this.user = { ...this.user, ...userProfile };
             this.userRole = userProfile.role;
             this.setRoleFlags(this.userRole);
+            
+            // Redirect super admin/HR users from default route to hr-dashboard
+            const currentUrl = this.router.url;
+            if ((userProfile.role === 'SUPER_ADMIN' || userProfile.role === 'HR') && 
+                (currentUrl === '/' || currentUrl === '')) {
+              console.log('MainLayout: Redirecting super admin/HR from default route to hr-dashboard');
+              setTimeout(() => {
+                this.router.navigate(['/hr-dashboard']).catch(err => {
+                  console.error('Navigation error:', err);
+                });
+              }, 100);
+            }
           } else if (userProfile === null) {
             // Profile loaded but empty/null -> Default to USER
             console.log('MainLayout: Profile null, defaulting to USER');

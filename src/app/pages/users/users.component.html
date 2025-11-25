@@ -9,8 +9,70 @@
                     styleClass="w-15rem">
                 </p-dropdown>
             </div>
-            <button pButton label="Add User" icon="pi pi-plus" (click)="openAddModal()"></button>
+            <div class="flex gap-2 align-items-center">
+                <button pButton [label]="showLeaveStats ? 'Hide Leave Stats' : 'View Leave Stats'" 
+                    [icon]="showLeaveStats ? 'pi pi-eye-slash' : 'pi pi-eye'" 
+                    (click)="toggleLeaveStats()" 
+                    styleClass="p-button-outlined"></button>
+                <button pButton label="Add User" icon="pi pi-plus" (click)="openAddModal()"></button>
+            </div>
         </div>
+    </div>
+
+    <!-- Leave Stats View -->
+    <div *ngIf="showLeaveStats" class="card mb-4">
+        <div class="flex justify-content-between align-items-center mb-3">
+            <h3 class="m-0">Leave Statistics ({{ selectedYear }})</h3>
+            <p-dropdown 
+                [(ngModel)]="selectedYear" 
+                [options]="availableYears"
+                optionLabel="label"
+                optionValue="value"
+                (onChange)="onYearChange()"
+                [style]="{width: '120px'}">
+            </p-dropdown>
+        </div>
+        <p-table [value]="userLeaveStats" [loading]="loadingStats" [rows]="10" [paginator]="true" responsiveLayout="scroll">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Applied</th>
+                    <th>Pending</th>
+                    <th>Approved</th>
+                    <th>Rejected</th>
+                    <th>Casual Taken</th>
+                    <th>Medical Taken</th>
+                    <th>Comp Off Taken</th>
+                    <th>Total Days</th>
+                    <th>Remaining Casual</th>
+                    <th>Remaining Medical</th>
+                    <th>Remaining Comp Off</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-user>
+                <tr>
+                    <td>{{ user.full_name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.totalApplied }}</td>
+                    <td><p-tag [value]="user.pending" severity="warning"></p-tag></td>
+                    <td><p-tag [value]="user.approved" severity="success"></p-tag></td>
+                    <td><p-tag [value]="user.rejected" severity="danger"></p-tag></td>
+                    <td>{{ user.casualLeavesTaken }}</td>
+                    <td>{{ user.medicalLeavesTaken }}</td>
+                    <td>{{ user.compOffLeavesTaken }}</td>
+                    <td><strong>{{ user.totalDaysTaken }}</strong></td>
+                    <td><strong>{{ user.remainingCasual }}</strong></td>
+                    <td><strong>{{ user.remainingMedical }}</strong></td>
+                    <td><strong>{{ user.remainingCompOffs || 0 }}</strong></td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="13" class="text-center p-4">No leave statistics available.</td>
+                </tr>
+            </ng-template>
+        </p-table>
     </div>
 
     <div class="card">
@@ -32,8 +94,12 @@
                     <td><p-tag [value]="user.role" [severity]="getRoleSeverity(user.role)"></p-tag></td>
                     <td>{{ user.designation || '-' }}</td>
                     <td>
-                        <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text"
-                            (click)="openEditModal(user)"></button>
+                        <div class="flex gap-2">
+                            <button pButton icon="pi pi-info-circle" class="p-button-rounded p-button-text"
+                                (click)="viewUserDashboard(user)" pTooltip="View Dashboard"></button>
+                            <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text"
+                                (click)="openEditModal(user)" pTooltip="Edit User"></button>
+                        </div>
                     </td>
                 </tr>
             </ng-template>

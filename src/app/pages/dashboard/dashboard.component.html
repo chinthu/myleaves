@@ -1,107 +1,265 @@
-<div class="dashboard-container p-4">
-    <div class="flex justify-content-between align-items-center mb-5">
-        <div>
-            <h2 class="text-3xl font-bold text-900 mb-1">Welcome back!</h2>
-            <p class="text-600 font-medium">Here's an overview of your leave balance.</p>
-        </div>
-        <p-button label="Apply Leave" icon="pi pi-plus" routerLink="/leaves/apply"></p-button>
-    </div>
-
-    <div class="grid">
-        <div class="col-12 md:col-6 lg:col-3">
-            <div class="surface-card shadow-2 p-3 border-round border-left-3 border-blue-500 h-full">
-                <div class="flex justify-content-between mb-3">
-                    <div>
-                        <span class="block text-500 font-medium mb-3">Casual Leave</span>
-                        <div class="text-900 font-medium text-xl">{{ casualBalance }}</div>
-                    </div>
-                    <div class="flex align-items-center justify-content-center bg-blue-100 border-round"
-                        style="width:2.5rem;height:2.5rem">
-                        <i class="pi pi-briefcase text-blue-500 text-xl"></i>
-                    </div>
-                </div>
-                <span class="text-green-500 font-medium">Available</span>
+<div class="dashboard-wrapper">
+    <div class="dashboard-header">
+        <div class="flex justify-content-between align-items-center">
+            <div>
+                <h1>{{ isViewingOtherUser ? (viewingUserName + '\'s Dashboard') : 'My Dashboard' }}</h1>
+                <p>{{ isViewingOtherUser ? 'Overview of ' + viewingUserName + '\'s leave balance and recent activity' : 'Overview of your leave balance and recent activity' }}</p>
             </div>
-        </div>
-        <div class="col-12 md:col-6 lg:col-3">
-            <div class="surface-card shadow-2 p-3 border-round border-left-3 border-orange-500 h-full">
-                <div class="flex justify-content-between mb-3">
-                    <div>
-                        <span class="block text-500 font-medium mb-3">Medical Leave</span>
-                        <div class="text-900 font-medium text-xl">{{ medicalBalance }}</div>
-                    </div>
-                    <div class="flex align-items-center justify-content-center bg-orange-100 border-round"
-                        style="width:2.5rem;height:2.5rem">
-                        <i class="pi pi-heart text-orange-500 text-xl"></i>
-                    </div>
-                </div>
-                <span class="text-green-500 font-medium">Available</span>
-            </div>
-        </div>
-        <div class="col-12 md:col-6 lg:col-3">
-            <div class="surface-card shadow-2 p-3 border-round border-left-3 border-purple-500 h-full">
-                <div class="flex justify-content-between mb-3">
-                    <div>
-                        <span class="block text-500 font-medium mb-3">Comp Offs</span>
-                        <div class="text-900 font-medium text-xl">{{ compOffBalance }}</div>
-                    </div>
-                    <div class="flex align-items-center justify-content-center bg-purple-100 border-round"
-                        style="width:2.5rem;height:2.5rem">
-                        <i class="pi pi-gift text-purple-500 text-xl"></i>
-                    </div>
-                </div>
-                <span class="text-green-500 font-medium">Available Days</span>
-            </div>
-        </div>
-        <div class="col-12 md:col-6 lg:col-3">
-            <div class="surface-card shadow-2 p-3 border-round border-left-3 border-cyan-500 h-full">
-                <div class="flex justify-content-between mb-3">
-                    <div>
-                        <span class="block text-500 font-medium mb-3">Pending Requests</span>
-                        <div class="text-900 font-medium text-xl">{{ pendingLeaves }}</div>
-                    </div>
-                    <div class="flex align-items-center justify-content-center bg-cyan-100 border-round"
-                        style="width:2.5rem;height:2.5rem">
-                        <i class="pi pi-clock text-cyan-500 text-xl"></i>
-                    </div>
-                </div>
-                <span class="text-500">Awaiting Approval</span>
+            <div *ngIf="isViewingOtherUser">
+                <p-button label="Back to Users" icon="pi pi-arrow-left" routerLink="/users" styleClass="p-button-outlined"></p-button>
             </div>
         </div>
     </div>
 
-    <div class="mt-5">
-        <p-card header="Recent Leaves">
-            <p-table [value]="recentLeaves" [rows]="5" [paginator]="true" responsiveLayout="scroll">
-                <ng-template pTemplate="header">
-                    <tr>
-                        <th>Type</th>
-                        <th>Dates</th>
-                        <th>Days</th>
-                        <th>Status</th>
-                        <th>Applied On</th>
-                    </tr>
-                </ng-template>
-                <ng-template pTemplate="body" let-leave>
-                    <tr>
-                        <td>{{ leave.type }}</td>
-                        <td>
-                            {{ leave.start_date | date }}
-                            <span *ngIf="leave.start_date !== leave.end_date"> - {{ leave.end_date | date }}</span>
-                        </td>
-                        <td>{{ leave.days_count }}</td>
-                        <td>
-                            <p-tag [value]="leave.status" [severity]="getSeverity(leave.status)"></p-tag>
-                        </td>
-                        <td>{{ leave.created_at | date:'short' }}</td>
-                    </tr>
-                </ng-template>
-                <ng-template pTemplate="emptymessage">
-                    <tr>
-                        <td colspan="5" class="text-center">No leaves found.</td>
-                    </tr>
-                </ng-template>
-            </p-table>
-        </p-card>
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="pi pi-briefcase"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ casualBalance }}</div>
+                <div class="stat-label">Remaining Casual Leave</div>
+                <div class="stat-taken" style="font-size: 0.875rem; color: #f56565; margin-top: 0.25rem; font-weight: 600;">
+                    Taken: {{ casualLeavesTaken }} days
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="pi pi-heart"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ medicalBalance }}</div>
+                <div class="stat-label">Remaining Medical Leave</div>
+                <div class="stat-taken" style="font-size: 0.875rem; color: #f56565; margin-top: 0.25rem; font-weight: 600;">
+                    Taken: {{ medicalLeavesTaken }} days
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #fad0c4 0%, #ffd1ff 100%);">
+                <i class="pi pi-gift"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ compOffBalance }}</div>
+                <div class="stat-label">Remaining Comp Offs</div>
+                <div class="stat-taken" style="font-size: 0.875rem; color: #f56565; margin-top: 0.25rem; font-weight: 600;">
+                    Taken: {{ compOffLeavesTaken }} days
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);">
+                <i class="pi pi-clock"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ pendingLeaves }}</div>
+                <div class="stat-label">Pending Requests</div>
+            </div>
+        </div>
     </div>
+
+    <!-- Total Leaves and Chart Section -->
+    <div class="charts-grid" style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Total Leaves Card -->
+        <div class="section-card">
+            <div class="section-header">
+                <h2>Total Leaves Taken</h2>
+                <p style="color: #6B6B6B; font-size: 0.875rem; margin: 0;">Calendar Year {{ selectedYear }}</p>
+            </div>
+            <div style="padding: 2rem; text-align: center;">
+                <div style="font-size: 3rem; font-weight: bold; color: #667eea; margin-bottom: 0.5rem;">
+                    {{ totalLeavesTakenDays }}
+                </div>
+                <div style="color: #6B6B6B; font-size: 1rem;">Days</div>
+                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #E8E8E8;">
+                    <div style="display: flex; justify-content: space-around; text-align: center;">
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 600; color: #667eea;">{{ casualLeavesTaken }}</div>
+                            <div style="font-size: 0.75rem; color: #6B6B6B; margin-top: 0.25rem;">Casual</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 600; color: #f56565;">{{ medicalLeavesTaken }}</div>
+                            <div style="font-size: 0.75rem; color: #6B6B6B; margin-top: 0.25rem;">Medical</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 600; color: #48bb78;">{{ compOffLeavesTaken }}</div>
+                            <div style="font-size: 0.75rem; color: #6B6B6B; margin-top: 0.25rem;">Comp Off</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Leaves Chart -->
+        <div class="section-card">
+            <div class="section-header">
+                <h2>Leaves by Month</h2>
+                <p style="color: #6B6B6B; font-size: 0.875rem; margin: 0;">Calendar Year {{ selectedYear }}</p>
+            </div>
+            <div style="padding: 1.5rem; height: 300px; position: relative;">
+                <p-chart type="line" [data]="monthlyLeavesChart" [options]="chartOptions" *ngIf="monthlyLeavesChart && !chartLoading"></p-chart>
+                <div *ngIf="chartLoading" class="flex align-items-center justify-content-center" style="height: 100%;">
+                    <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: #667eea;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Leaves Section -->
+    <div class="section-card">
+        <div class="section-header">
+            <h2>Recent Leaves</h2>
+            <div class="flex align-items-center gap-3">
+                <p-dropdown 
+                    [(ngModel)]="selectedYear" 
+                    [options]="availableYears"
+                    optionLabel="label"
+                    optionValue="value"
+                    (onChange)="onYearChange()"
+                    [style]="{width: '120px'}">
+                </p-dropdown>
+                <p-button label="Apply Leave" icon="pi pi-plus" routerLink="/leaves/apply"></p-button>
+            </div>
+        </div>
+        <p-toast></p-toast>
+        <p-table [value]="recentLeaves" [rows]="10" [paginator]="true" responsiveLayout="scroll">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Type</th>
+                    <th>Dates</th>
+                    <th>Days</th>
+                    <th>Status</th>
+                    <th>Applied On</th>
+                    <th *ngIf="hasEditableLeaves()">Actions</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-leave>
+                <tr>
+                    <td><span [class]="getTypeBadgeClass(leave.type)">{{ leave.type }}</span></td>
+                    <td>
+                        {{ leave.start_date | date:'MMM d, y' }}
+                        <span *ngIf="leave.start_date !== leave.end_date"> - {{ leave.end_date | date:'MMM d, y' }}</span>
+                    </td>
+                    <td>{{ leave.days_count }}</td>
+                    <td><p-tag [value]="leave.status" [severity]="getSeverity(leave.status)"></p-tag></td>
+                    <td>{{ leave.created_at | date:'MMM d, y' }}</td>
+                    <td *ngIf="canEditOrCancel(leave) && !isViewingOtherUser">
+                        <div class="flex gap-2">
+                            <p-button 
+                                icon="pi pi-pencil" 
+                                styleClass="p-button-rounded p-button-text p-button-sm"
+                                (onClick)="openEditDialog(leave)"
+                                pTooltip="Edit Leave">
+                            </p-button>
+                            <p-button 
+                                icon="pi pi-times" 
+                                styleClass="p-button-rounded p-button-text p-button-danger p-button-sm"
+                                (onClick)="openCancelDialog(leave)"
+                                pTooltip="Cancel Leave">
+                            </p-button>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td [attr.colspan]="(hasEditableLeaves() && !isViewingOtherUser) ? 6 : 5" class="text-center p-4">No leaves found.</td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
+
+    <!-- Edit Leave Dialog -->
+    <p-dialog 
+        [(visible)]="showEditDialog" 
+        [modal]="true" 
+        [style]="{width: '500px'}" 
+        header="Edit Leave"
+        [closable]="true"
+        (onHide)="closeEditDialog()">
+        <div class="flex flex-column gap-3">
+            <div>
+                <label class="block mb-2">Leave Type</label>
+                <p-dropdown 
+                    [(ngModel)]="editForm.type" 
+                    [options]="leaveTypes" 
+                    optionLabel="label" 
+                    optionValue="value"
+                    [style]="{width: '100%'}">
+                </p-dropdown>
+            </div>
+            <div>
+                <label class="block mb-2">Start Date</label>
+                <p-calendar 
+                    [(ngModel)]="editForm.start_date" 
+                    [showIcon]="true"
+                    dateFormat="yy-mm-dd"
+                    [style]="{width: '100%'}">
+                </p-calendar>
+            </div>
+            <div>
+                <label class="block mb-2">End Date</label>
+                <p-calendar 
+                    [(ngModel)]="editForm.end_date" 
+                    [showIcon]="true"
+                    dateFormat="yy-mm-dd"
+                    [style]="{width: '100%'}">
+                </p-calendar>
+            </div>
+            <div>
+                <div class="flex align-items-center gap-2">
+                    <p-checkbox [(ngModel)]="editForm.is_half_day" inputId="halfDayCheck" [binary]="true"></p-checkbox>
+                    <label for="halfDayCheck" style="cursor: pointer; margin: 0;">Half Day</label>
+                </div>
+            </div>
+            <div *ngIf="editForm.is_half_day">
+                <label class="block mb-2">Half Day Slot</label>
+                <p-dropdown 
+                    [(ngModel)]="editForm.half_day_slot" 
+                    [options]="halfDaySlots" 
+                    optionLabel="label" 
+                    optionValue="value"
+                    [style]="{width: '100%'}">
+                </p-dropdown>
+            </div>
+            <div>
+                <label class="block mb-2">Reason</label>
+                <textarea 
+                    [(ngModel)]="editForm.reason" 
+                    pInputTextarea 
+                    rows="3"
+                    [style]="{width: '100%'}">
+                </textarea>
+            </div>
+        </div>
+        <ng-template pTemplate="footer">
+            <p-button label="Cancel" icon="pi pi-times" (onClick)="closeEditDialog()" styleClass="p-button-text"></p-button>
+            <p-button label="Save" icon="pi pi-check" (onClick)="saveEdit()" styleClass="p-button-primary"></p-button>
+        </ng-template>
+    </p-dialog>
+
+    <!-- Cancel Leave Dialog -->
+    <p-dialog 
+        [(visible)]="showCancelDialog" 
+        [modal]="true" 
+        [style]="{width: '400px'}" 
+        header="Cancel Leave"
+        [closable]="true"
+        (onHide)="closeCancelDialog()">
+        <p>Are you sure you want to cancel this leave?</p>
+        <div *ngIf="selectedLeave" class="mt-3 p-3 surface-ground border-round">
+            <div><strong>Type:</strong> {{ selectedLeave.type }}</div>
+            <div><strong>Dates:</strong> {{ selectedLeave.start_date | date }} - {{ selectedLeave.end_date | date }}</div>
+            <div><strong>Days:</strong> {{ selectedLeave.days_count }}</div>
+        </div>
+        <ng-template pTemplate="footer">
+            <p-button label="No" icon="pi pi-times" (onClick)="closeCancelDialog()" styleClass="p-button-text"></p-button>
+            <p-button label="Yes, Cancel" icon="pi pi-check" (onClick)="confirmCancel()" styleClass="p-button-danger"></p-button>
+        </ng-template>
+    </p-dialog>
 </div>
