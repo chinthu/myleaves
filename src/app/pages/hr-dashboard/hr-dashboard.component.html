@@ -94,6 +94,11 @@
             <p-chart type="doughnut" [data]="leaveStatusChart" [options]="chartOptions"></p-chart>
         </div>
 
+        <div class="chart-card">
+            <h3>Top Users by Leaves</h3>
+            <p-chart type="bar" [data]="topUsersLeavesChart" [options]="topUsersChartOptions"></p-chart>
+        </div>
+
         <div class="chart-card full-width">
             <h3>Leave Trend (Last 6 Months)</h3>
             <p-chart type="line" [data]="leaveTrendChart" [options]="chartOptions"></p-chart>

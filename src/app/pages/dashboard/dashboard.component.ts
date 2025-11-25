@@ -175,6 +175,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   async loadCurrentUserDashboard() {
+    // Show loading indicator immediately
+    this.loadingService.show();
+    
     this.authService.userProfile$
       .pipe(takeUntil(this.destroy$))
       .subscribe(async (userProfile) => {
@@ -183,14 +186,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
           this.casualBalance = this.user.balance_casual;
           this.medicalBalance = this.user.balance_medical;
           
-          // Load all data in parallel with loading indicator
-          this.loadingService.show();
           try {
+            // Load all data in parallel
             await Promise.all([
               this.loadCompOffs(false),
               this.loadLeaves(false)
             ]);
+          } catch (error) {
+            console.error('Error loading dashboard data:', error);
+            this.messageService.add({ 
+              severity: 'error', 
+              summary: 'Error', 
+              detail: 'Failed to load dashboard data. Please refresh the page.' 
+            });
           } finally {
+            // Hide loading indicator after all data is loaded
             this.loadingService.hide();
           }
           
@@ -198,7 +208,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
           if (!this.leavesChannel) {
             this.setupSubscriptions();
           }
+        } else if (userProfile === null) {
+          // Profile is null (not loading, but no profile found)
+          this.loadingService.hide();
         }
+        // If userProfile is undefined, it's still loading, keep loading indicator
       });
   }
 
@@ -263,9 +277,33 @@ export class DashboardComponent implements OnInit, OnDestroy {
     try {
       const { data, error } = await this.leaveService.getLeavesByYear(userId, this.selectedYear);
 
+      if (error) {
+        console.error('Error loading leaves:', error);
+        this.messageService.add({ 
+          severity: 'error', 
+          summary: 'Error', 
+          detail: 'Failed to load leaves data.' 
+        });
+        // Initialize empty state on error
+        this.processLeavesData([]);
+        return;
+      }
+
       if (data) {
         this.processLeavesData(data);
+      } else {
+        // No data, initialize empty state
+        this.processLeavesData([]);
       }
+    } catch (error: any) {
+      console.error('Error in loadLeavesForUser:', error);
+      this.messageService.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: error.message || 'Failed to load leaves data.' 
+      });
+      // Initialize empty state on error
+      this.processLeavesData([]);
     } finally {
       if (showLoading) {
         this.loadingService.hide();
@@ -284,40 +322,49 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   processLeavesData(data: any[]) {
-    // Update recent leaves immediately
-    this.recentLeaves = data;
-    
-    // Calculate stats for the selected year (year-based calculations) - fast operations
-    const approvedLeaves = data.filter((l: any) => l.status === 'APPROVED');
-    this.totalLeavesTaken = approvedLeaves.length;
-    this.pendingLeaves = data.filter((l: any) => l.status === 'PENDING').length;
-    
-    // Calculate leaves taken by category for the selected year
-    this.casualLeavesTaken = approvedLeaves
-      .filter((l: any) => l.type === 'CASUAL')
-      .reduce((sum: number, l: any) => sum + (l.days_count || 0), 0);
-    
-    this.medicalLeavesTaken = approvedLeaves
-      .filter((l: any) => l.type === 'MEDICAL')
-      .reduce((sum: number, l: any) => sum + (l.days_count || 0), 0);
-    
-    this.compOffLeavesTaken = approvedLeaves
-      .filter((l: any) => l.type === 'COMP_OFF')
-      .reduce((sum: number, l: any) => sum + (l.days_count || 0), 0);
-    
-    // Calculate total leaves taken (in days)
-    this.totalLeavesTakenDays = approvedLeaves
-      .reduce((sum: number, l: any) => sum + (l.days_count || 0), 0);
-    
-    // Setup monthly chart asynchronously to avoid blocking UI
-    this.chartLoading = true;
-    this.monthlyLeavesChart = null; // Clear previous chart
-    
-    // Use setTimeout to defer chart calculation
-    setTimeout(() => {
-      this.setupMonthlyChart(data);
-      this.chartLoading = false;
-    }, 0);
+    try {
+      // Update recent leaves immediately
+      this.recentLeaves = data || [];
+      
+      // Calculate stats for the selected year (year-based calculations) - fast operations
+      const approvedLeaves = (data || []).filter((l: any) => l.status === 'APPROVED');
+      this.totalLeavesTaken = approvedLeaves.length;
+      this.pendingLeaves = (data || []).filter((l: any) => l.status === 'PENDING').length;
+      
+      // Calculate leaves taken by category for the selected year
+      this.casualLeavesTaken = approvedLeaves
+        .filter((l: any) => l.type === 'CASUAL')
+        .reduce((sum: number, l: any) => sum + (l.days_count || 0), 0);
+      
+      this.medicalLeavesTaken = approvedLeaves
+        .filter((l: any) => l.type === 'MEDICAL')
+        .reduce((sum: number, l: any) => sum + (l.days_count || 0), 0);
+      
+      this.compOffLeavesTaken = approvedLeaves
+        .filter((l: any) => l.type === 'COMP_OFF')
+        .reduce((sum: number, l: any) => sum + (l.days_count || 0), 0);
+      
+      // Calculate total leaves taken (in days)
+      this.totalLeavesTakenDays = approvedLeaves
+        .reduce((sum: number, l: any) => sum + (l.days_count || 0), 0);
+      
+      // Setup monthly chart asynchronously to avoid blocking UI
+      this.chartLoading = true;
+      this.monthlyLeavesChart = null; // Clear previous chart
+      
+      // Use requestAnimationFrame for better performance
+      requestAnimationFrame(() => {
+        try {
+          this.setupMonthlyChart(data || []);
+        } catch (error) {
+          console.error('Error setting up monthly chart:', error);
+        } finally {
+          this.chartLoading = false;
+        }
+      });
+    } catch (error) {
+      console.error('Error processing leaves data:', error);
+    }
     
     // Note: casualBalance and medicalBalance are cumulative (current available balance)
     // The "taken" stats are calculated per year from the leaves data above

@@ -74,6 +74,18 @@ create table public.user_comp_offs (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- Leave Settings Table (Organization-specific leave settings per year)
+create table if not exists public.leave_settings (
+  id uuid default uuid_generate_v4() primary key,
+  organization_id uuid references public.organizations(id) on delete cascade not null,
+  year integer not null,
+  default_casual_leaves integer default 12,
+  default_medical_leaves integer default 12,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(organization_id, year)
+);
+
 -- RLS Policies (Basic Setup - Refine as needed)
 alter table public.organizations enable row level security;
 alter table public.users enable row level security;
@@ -82,10 +94,61 @@ alter table public.group_members enable row level security;
 alter table public.leaves enable row level security;
 alter table public.comp_offs enable row level security;
 alter table public.user_comp_offs enable row level security;
+alter table public.leave_settings enable row level security;
+
+-- Create a security definer function to get user role and org without RLS recursion
+create or replace function public.get_user_role_org()
+returns table(role text, organization_id uuid) 
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  return query
+  select u.role, u.organization_id
+  from public.users u
+  where u.id = auth.uid();
+end;
+$$;
 
 -- Policy: Users can view their own profile
 create policy "Users can view own profile" on public.users
   for select using (auth.uid() = id);
+
+-- Policy: HR/ADMIN/SUPER_ADMIN can view all users in their organization
+drop policy if exists "users_select_org" on public.users;
+create policy "users_select_org" on public.users
+  for select to authenticated using (
+    auth.uid() = id OR
+    exists (
+      select 1 from public.get_user_role_org() 
+      where role in ('HR', 'ADMIN', 'SUPER_ADMIN')
+    )
+  );
+
+-- Policy: HR/ADMIN/SUPER_ADMIN can update users in their organization
+drop policy if exists "users_update_org" on public.users;
+create policy "users_update_org" on public.users
+  for update to authenticated using (
+    auth.uid() = id OR
+    exists (
+      select 1 from public.get_user_role_org() ur
+      where (
+        (ur.role in ('HR', 'ADMIN', 'SUPER_ADMIN') AND ur.organization_id = users.organization_id) OR
+        ur.role = 'SUPER_ADMIN'
+      )
+    )
+  )
+  with check (
+    auth.uid() = id OR
+    exists (
+      select 1 from public.get_user_role_org() ur
+      where (
+        (ur.role in ('HR', 'ADMIN', 'SUPER_ADMIN') AND ur.organization_id = users.organization_id) OR
+        ur.role = 'SUPER_ADMIN'
+      )
+    )
+  );
 
 -- Policy: Users can view their own leaves
 create policy "Users can view own leaves" on public.leaves
@@ -94,5 +157,20 @@ create policy "Users can view own leaves" on public.leaves
 -- Policy: Users can insert their own leaves
 create policy "Users can insert own leaves" on public.leaves
   for insert with check (auth.uid() = user_id);
+
+-- Policy: Leave Settings - All authenticated users can view
+drop policy if exists "leave_settings_select" on public.leave_settings;
+create policy "leave_settings_select" on public.leave_settings
+  for select to authenticated using (true);
+
+-- Policy: Leave Settings - HR, ADMIN, SUPER_ADMIN can modify
+drop policy if exists "leave_settings_modify" on public.leave_settings;
+create policy "leave_settings_modify" on public.leave_settings
+  for all to authenticated using (
+    exists (
+      select 1 from public.get_user_role_org() 
+      where role in ('HR', 'ADMIN', 'SUPER_ADMIN')
+    )
+  );
 
 -- TODO: Add more detailed policies for Approvers, HR, Admin

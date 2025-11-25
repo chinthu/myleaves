@@ -79,7 +79,9 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
   leaveTypeChart: any;
   leaveStatusChart: any;
   leaveTrendChart: any;
+  topUsersLeavesChart: any;
   chartOptions: any;
+  topUsersChartOptions: any;
 
   // Admin actions
   showEditDialog = false;
@@ -226,6 +228,9 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
       }]
     };
 
+    // Top Users by Leaves (Horizontal Stacked Bar Chart)
+    this.setupTopUsersLeavesChart();
+
     // Leave Trend (Last 6 months - Line Chart)
     const last6Months = this.getLast6MonthsData();
     this.leaveTrendChart = {
@@ -248,8 +253,196 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
               family: 'Roboto'
             }
           }
+        },
+        tooltip: {
+          callbacks: {
+            footer: (tooltipItems: any) => {
+              const totals = (this.topUsersLeavesChart as any)?.totals;
+              if (totals && tooltipItems.length > 0) {
+                const dataIndex = tooltipItems[0].dataIndex;
+                return `Total: ${totals[dataIndex].toFixed(1)} days`;
+              }
+              return '';
+            }
+          }
+        }
+      },
+      indexAxis: 'y', // Horizontal bar chart
+      scales: {
+        x: {
+          beginAtZero: true,
+          stacked: true,
+          ticks: {
+            stepSize: 1
+          }
+        },
+        y: {
+          stacked: true
         }
       }
+    };
+  }
+
+  setupTopUsersLeavesChart() {
+    // Group leaves by user and type
+    const userLeavesMap: { [key: string]: { name: string; casual: number; medical: number; compOff: number; total: number } } = {};
+
+    this.allLeaves
+      .filter(l => l.status === 'APPROVED')
+      .forEach(leave => {
+        const userId = leave.user_id;
+        const userName = leave.users?.full_name || leave.users?.email || 'Unknown';
+        
+        if (!userLeavesMap[userId]) {
+          userLeavesMap[userId] = {
+            name: userName,
+            casual: 0,
+            medical: 0,
+            compOff: 0,
+            total: 0
+          };
+        }
+
+        const days = leave.days_count || (leave.is_half_day ? 0.5 : 1);
+        
+        if (leave.type === 'CASUAL') {
+          userLeavesMap[userId].casual += days;
+        } else if (leave.type === 'MEDICAL') {
+          userLeavesMap[userId].medical += days;
+        } else if (leave.type === 'COMP_OFF') {
+          userLeavesMap[userId].compOff += days;
+        }
+        
+        userLeavesMap[userId].total += days;
+      });
+
+    // Convert to array and sort by total (descending)
+    const userLeavesArray = Object.values(userLeavesMap)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10); // Top 10 users
+
+    // Prepare chart data
+    const labels = userLeavesArray.map(u => u.name);
+    const casualData = userLeavesArray.map(u => u.casual);
+    const medicalData = userLeavesArray.map(u => u.medical);
+    const compOffData = userLeavesArray.map(u => u.compOff);
+    const totalData = userLeavesArray.map(u => u.total);
+
+    this.topUsersLeavesChart = {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Casual Leave',
+          data: casualData,
+          backgroundColor: '#667eea',
+          borderColor: '#667eea',
+          borderWidth: 1
+        },
+        {
+          label: 'Medical Leave',
+          data: medicalData,
+          backgroundColor: '#f56565',
+          borderColor: '#f56565',
+          borderWidth: 1
+        },
+        {
+          label: 'Comp Off',
+          data: compOffData,
+          backgroundColor: '#48bb78',
+          borderColor: '#48bb78',
+          borderWidth: 1
+        }
+      ]
+    };
+
+    // Store totals for display
+    (this.topUsersLeavesChart as any).totals = totalData;
+
+    // Set up chart options for horizontal stacked bar
+    this.topUsersChartOptions = {
+      indexAxis: 'y', // Horizontal bar chart
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            font: {
+              family: 'Roboto',
+              size: 12
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            footer: (tooltipItems: any) => {
+              const totals = (this.topUsersLeavesChart as any)?.totals;
+              if (totals && tooltipItems.length > 0) {
+                const dataIndex = tooltipItems[0].dataIndex;
+                return `Total: ${totals[dataIndex].toFixed(1)} days`;
+              }
+              return '';
+            }
+          }
+        },
+        // Custom plugin to show total at end of each bar
+        afterDatasetsDraw: (chart: any) => {
+          const ctx = chart.ctx;
+          const totals = (this.topUsersLeavesChart as any)?.totals;
+          if (!totals) return;
+
+          // Get the first dataset to draw labels once per bar
+          const meta = chart.getDatasetMeta(0);
+          meta.data.forEach((element: any, index: number) => {
+            const total = totals[index];
+            if (total > 0) {
+              // Get the rightmost position of the stacked bar
+              const xScale = chart.scales.x;
+              const yScale = chart.scales.y;
+              const xPos = xScale.getPixelForValue(total);
+              const yPos = element.y;
+              
+              ctx.save();
+              ctx.textAlign = 'left';
+              ctx.textBaseline = 'middle';
+              ctx.font = 'bold 12px Roboto';
+              ctx.fillStyle = '#1A1A1A';
+              // Draw text slightly to the right of the bar end
+              ctx.fillText(`${total.toFixed(1)}`, xPos + 8, yPos);
+              ctx.restore();
+            }
+          });
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          stacked: true,
+          ticks: {
+            stepSize: 1,
+            font: {
+              family: 'Roboto'
+            }
+          },
+          title: {
+            display: true,
+            text: 'Days',
+            font: {
+              family: 'Roboto',
+              size: 12
+            }
+          }
+        },
+        y: {
+          stacked: true,
+          ticks: {
+            font: {
+              family: 'Roboto'
+            }
+          }
+        }
+      },
+      responsive: true,
+      maintainAspectRatio: false
     };
   }
 

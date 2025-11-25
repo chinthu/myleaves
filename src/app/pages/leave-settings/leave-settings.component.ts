@@ -112,7 +112,23 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
         .eq('year', this.settings.year)
         .single();
 
-      if (data) {
+      if (error) {
+        // If table doesn't exist, show helpful error
+        if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
+          console.error('leave_settings table does not exist. Please run the schema migration.');
+          this.messageService.add({ 
+            severity: 'error', 
+            summary: 'Database Error', 
+            detail: 'The leave_settings table does not exist. Please run the SQL migration from leave_settings_schema.sql in your Supabase SQL editor.' 
+          });
+        }
+        // Reset to defaults if no record found (not an error, just no data)
+        this.settings = {
+          default_casual_leaves: 12,
+          default_medical_leaves: 12,
+          year: this.settings.year
+        };
+      } else if (data) {
         this.settings = data;
       } else {
         // Reset to defaults if no record found
@@ -122,8 +138,15 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
           year: this.settings.year
         };
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading settings:', error);
+      if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
+        this.messageService.add({ 
+          severity: 'error', 
+          summary: 'Database Error', 
+          detail: 'The leave_settings table does not exist. Please run the SQL migration from leave_settings_schema.sql in your Supabase SQL editor.' 
+        });
+      }
     } finally {
       this.loading = false;
     }
@@ -161,11 +184,18 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
         error = insertError;
       }
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
+          throw new Error('The leave_settings table does not exist. Please run the SQL migration from leave_settings_schema.sql in your Supabase SQL editor.');
+        }
+        throw error;
+      }
 
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Settings saved successfully' });
+      // Reload settings after save
+      await this.loadSettings();
     } catch (error: any) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message });
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message || 'Failed to save settings' });
     } finally {
       this.loading = false;
     }
@@ -193,7 +223,10 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
     this.loadingService.show();
     
     try {
-      // Step 1: Get all user IDs in the organization
+      // Step 1: Reload settings for the selected year to ensure we have the latest values
+      await this.loadSettings();
+
+      // Step 2: Get all user IDs in the organization
       const { data: users, error: usersError } = await this.supabase
         .from('users')
         .select('id')
@@ -208,7 +241,7 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
 
       const userIds = users.map(u => u.id);
 
-      // Step 2: Delete all leaves for these users
+      // Step 3: Delete all leaves for these users
       const { error: leavesError } = await this.supabase
         .from('leaves')
         .delete()
@@ -216,21 +249,54 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
 
       if (leavesError) throw leavesError;
 
-      // Step 3: Reset all user balances to default values
+      // Step 4: Reset all user balances to default values from leave settings
+      const defaultCasual = this.settings.default_casual_leaves || 12;
+      const defaultMedical = this.settings.default_medical_leaves || 12;
+      
+      // Update all users in the organization
+      // Note: This requires an RLS policy that allows HR/ADMIN/SUPER_ADMIN to update users in their organization
       const { error: updateError } = await this.supabase
         .from('users')
         .update({
-          balance_casual: this.settings.default_casual_leaves,
-          balance_medical: this.settings.default_medical_leaves
+          balance_casual: defaultCasual,
+          balance_medical: defaultMedical,
+          balance_compoff: 0
         })
         .eq('organization_id', this.selectedOrgId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        // If bulk update fails due to RLS, try updating individually
+        console.warn('Bulk update failed, trying individual updates:', updateError);
+        let updateErrors: any[] = [];
+        let successCount = 0;
+        
+        for (const userId of userIds) {
+          const { error: individualError } = await this.supabase
+            .from('users')
+            .update({
+              balance_casual: defaultCasual,
+              balance_medical: defaultMedical,
+              balance_compoff: 0
+            })
+            .eq('id', userId);
+
+          if (individualError) {
+            console.error(`Error updating user ${userId}:`, individualError);
+            updateErrors.push({ userId, error: individualError });
+          } else {
+            successCount++;
+          }
+        }
+
+        if (updateErrors.length > 0) {
+          throw new Error(`Failed to update ${updateErrors.length} user(s). ${successCount} user(s) updated successfully. This may be due to RLS policies. Please ensure HR/ADMIN/SUPER_ADMIN have permission to update users in their organization.`);
+        }
+      }
 
       this.messageService.add({ 
         severity: 'success', 
         summary: 'Reset Complete', 
-        detail: `Successfully deleted all leaves and reset balances for ${users.length} user(s) in this organization.` 
+        detail: `Successfully deleted all leaves and reset balances for ${users.length} user(s) in this organization for year ${this.settings.year}.` 
       });
     } catch (error: any) {
       console.error('Reset error:', error);
