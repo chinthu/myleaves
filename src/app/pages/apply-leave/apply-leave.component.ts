@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
@@ -15,6 +15,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-apply-leave',
@@ -24,7 +25,7 @@ import { CardModule } from 'primeng/card';
   styleUrls: ['./apply-leave.component.scss'],
   providers: [MessageService]
 })
-export class ApplyLeaveComponent implements OnInit {
+export class ApplyLeaveComponent implements OnInit, OnDestroy {
   supabase: SupabaseClient;
   user: any = null;
   groups: any[] = [];
@@ -46,6 +47,7 @@ export class ApplyLeaveComponent implements OnInit {
   loading: boolean = false;
   message: string = '';
   error: string = '';
+  private destroy$ = new Subject<void>();
 
   constructor(
     private authService: AuthService,
@@ -57,14 +59,16 @@ export class ApplyLeaveComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.authService.currentUser$.subscribe(async (u) => {
-      if (u) {
-        this.user = await this.authService.getUserProfile();
-        if (this.user && this.user.organization_id) {
-          this.loadGroups(this.user.organization_id);
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(async (u) => {
+        if (u) {
+          this.user = await this.authService.getUserProfile();
+          if (this.user && this.user.organization_id) {
+            this.loadGroups(this.user.organization_id);
+          }
         }
-      }
-    });
+      });
   }
 
   async loadGroups(orgId: string) {
@@ -152,5 +156,10 @@ export class ApplyLeaveComponent implements OnInit {
     } finally {
       this.loading = false;
     }
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

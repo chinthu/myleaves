@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient, User, Session } from '@supabase/supabase-js';
 import { environment } from '../../environments/environment';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { shareReplay } from 'rxjs/operators';
 import { Router } from '@angular/router';
 
 @Injectable({
@@ -65,11 +66,11 @@ export class AuthService {
   }
 
   get currentUser$(): Observable<User | null | undefined> {
-    return this._currentUser.asObservable();
+    return this._currentUser.asObservable().pipe(shareReplay(1));
   }
 
   get userProfile$(): Observable<any> {
-    return this._userProfile.asObservable();
+    return this._userProfile.asObservable().pipe(shareReplay(1));
   }
 
   get currentUserValue(): User | null | undefined {

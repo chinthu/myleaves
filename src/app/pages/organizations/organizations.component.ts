@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../services/auth.service';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-organizations',
@@ -12,7 +13,7 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './organizations.component.html',
   styleUrls: ['./organizations.component.scss']
 })
-export class OrganizationsComponent implements OnInit {
+export class OrganizationsComponent implements OnInit, OnDestroy {
   supabase: SupabaseClient;
   currentUser: any = null;
   organizations: any[] = [];
@@ -30,21 +31,24 @@ export class OrganizationsComponent implements OnInit {
   loading = false;
   message = '';
   error = '';
+  private destroy$ = new Subject<void>();
 
   constructor(private authService: AuthService) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
 
   ngOnInit() {
-    this.authService.currentUser$.subscribe(async (u) => {
-      if (u) {
-        this.currentUser = await this.authService.getUserProfile();
-        // Only Super Admin can access this
-        if (this.currentUser && this.currentUser.role === 'SUPER_ADMIN') {
-          this.loadOrganizations();
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(async (u) => {
+        if (u) {
+          this.currentUser = await this.authService.getUserProfile();
+          // Only Super Admin can access this
+          if (this.currentUser && this.currentUser.role === 'SUPER_ADMIN') {
+            this.loadOrganizations();
+          }
         }
-      }
-    });
+      });
   }
 
   async loadOrganizations() {
@@ -113,5 +117,10 @@ export class OrganizationsComponent implements OnInit {
     } finally {
       this.loading = false;
     }
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

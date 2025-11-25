@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { LeaveService } from '../../services/leave.service';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
+import { Subject, takeUntil } from 'rxjs';
 
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -20,11 +21,12 @@ import { CardModule } from 'primeng/card';
   styleUrls: ['./approvals.component.scss'],
   providers: [MessageService]
 })
-export class ApprovalsComponent implements OnInit {
+export class ApprovalsComponent implements OnInit, OnDestroy {
   supabase: SupabaseClient;
   pendingLeaves: any[] = [];
   loading: boolean = true;
   user: any = null;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private authService: AuthService,
@@ -35,14 +37,16 @@ export class ApprovalsComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.authService.currentUser$.subscribe(async (u) => {
-      if (u) {
-        this.user = await this.authService.getUserProfile();
-        if (this.user) {
-          this.loadPendingApprovals();
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(async (u) => {
+        if (u) {
+          this.user = await this.authService.getUserProfile();
+          if (this.user) {
+            this.loadPendingApprovals();
+          }
         }
-      }
-    });
+      });
   }
 
   async loadPendingApprovals() {
@@ -90,5 +94,10 @@ export class ApprovalsComponent implements OnInit {
       case 'PENDING': return 'warn';
       default: return 'info';
     }
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

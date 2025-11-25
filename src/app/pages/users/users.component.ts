@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../services/auth.service';
+import { Subject, takeUntil } from 'rxjs';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -31,7 +32,7 @@ import { TagModule } from 'primeng/tag';
   templateUrl: './users.component.html',
   styleUrls: ['./users.component.scss']
 })
-export class UsersComponent implements OnInit {
+export class UsersComponent implements OnInit, OnDestroy {
   supabase: SupabaseClient;
   currentUser: any = null;
   users: any[] = [];
@@ -58,6 +59,7 @@ export class UsersComponent implements OnInit {
   organizations: any[] = [];
   selectedOrgId: string | null = null;
   isSuperAdmin = false;
+  private destroy$ = new Subject<void>();
 
   roles = [
     { label: 'User', value: 'USER' },
@@ -81,27 +83,29 @@ export class UsersComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.authService.currentUser$.subscribe(async (u) => {
-      if (u) {
-        this.currentUser = await this.authService.getUserProfile();
-        if (this.currentUser) {
-          this.isSuperAdmin = this.currentUser.role === 'SUPER_ADMIN';
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(async (u) => {
+        if (u) {
+          this.currentUser = await this.authService.getUserProfile();
+          if (this.currentUser) {
+            this.isSuperAdmin = this.currentUser.role === 'SUPER_ADMIN';
 
-          if (this.isSuperAdmin) {
-            await this.loadOrganizations();
-            // Default to first org or user's org
-            this.selectedOrgId = this.currentUser.organization_id || (this.organizations.length > 0 ? this.organizations[0].id : null);
-          } else {
-            this.selectedOrgId = this.currentUser.organization_id;
-          }
+            if (this.isSuperAdmin) {
+              await this.loadOrganizations();
+              // Default to first org or user's org
+              this.selectedOrgId = this.currentUser.organization_id || (this.organizations.length > 0 ? this.organizations[0].id : null);
+            } else {
+              this.selectedOrgId = this.currentUser.organization_id;
+            }
 
-          if (this.selectedOrgId) {
-            this.formData.organization_id = this.selectedOrgId;
-            this.loadUsers();
+            if (this.selectedOrgId) {
+              this.formData.organization_id = this.selectedOrgId;
+              this.loadUsers();
+            }
           }
         }
-      }
-    });
+      });
   }
 
   async loadOrganizations() {
@@ -240,5 +244,10 @@ export class UsersComponent implements OnInit {
     } finally {
       this.loading = false;
     }
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

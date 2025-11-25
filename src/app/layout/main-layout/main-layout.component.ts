@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
-import { combineLatest } from 'rxjs';
+import { combineLatest, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-main-layout',
@@ -12,7 +13,7 @@ import { combineLatest } from 'rxjs';
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.scss']
 })
-export class MainLayoutComponent implements OnInit {
+export class MainLayoutComponent implements OnInit, OnDestroy {
   user: any = null;
   userEmail: string = '';
   userRole: string = '';
@@ -23,6 +24,7 @@ export class MainLayoutComponent implements OnInit {
   isAdmin = false;
   isHr = false;
   isApprover = false;
+  private destroy$ = new Subject<void>();
 
   constructor(private authService: AuthService, private router: Router) { }
 
@@ -31,33 +33,35 @@ export class MainLayoutComponent implements OnInit {
     combineLatest([
       this.authService.currentUser$,
       this.authService.userProfile$
-    ]).subscribe(([authUser, userProfile]) => {
-      console.log('MainLayout: State update', { authUser, userProfile });
+    ])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(([authUser, userProfile]) => {
+        console.log('MainLayout: State update', { authUser, userProfile });
 
-      if (authUser) {
-        // Start with auth user data
-        this.user = { ...authUser };
-        this.userEmail = authUser.email || '';
+        if (authUser) {
+          // Start with auth user data
+          this.user = { ...authUser };
+          this.userEmail = authUser.email || '';
 
-        // If we have a profile, merge it and prioritize its role
-        if (userProfile) {
-          this.user = { ...this.user, ...userProfile };
-          this.userRole = userProfile.role;
-          this.setRoleFlags(this.userRole);
-        } else if (userProfile === null) {
-          // Profile loaded but empty/null -> Default to USER
-          console.log('MainLayout: Profile null, defaulting to USER');
-          this.userRole = 'USER';
-          this.setRoleFlags(this.userRole);
-        } else {
-          // userProfile is undefined (loading) -> Do not set flags yet, keep loading state
-          // This prevents flickering to 'USER' role while waiting for profile
+          // If we have a profile, merge it and prioritize its role
+          if (userProfile) {
+            this.user = { ...this.user, ...userProfile };
+            this.userRole = userProfile.role;
+            this.setRoleFlags(this.userRole);
+          } else if (userProfile === null) {
+            // Profile loaded but empty/null -> Default to USER
+            console.log('MainLayout: Profile null, defaulting to USER');
+            this.userRole = 'USER';
+            this.setRoleFlags(this.userRole);
+          } else {
+            // userProfile is undefined (loading) -> Do not set flags yet, keep loading state
+            // This prevents flickering to 'USER' role while waiting for profile
+          }
+
+          // Trigger profile load if needed (idempotent in service)
+          this.authService.getUserProfile();
         }
-
-        // Trigger profile load if needed (idempotent in service)
-        this.authService.getUserProfile();
-      }
-    });
+      });
   }
 
   setRoleFlags(role: string) {
@@ -74,5 +78,10 @@ export class MainLayoutComponent implements OnInit {
   async logout() {
     await this.authService.signOut();
     this.router.navigate(['/login']);
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }
