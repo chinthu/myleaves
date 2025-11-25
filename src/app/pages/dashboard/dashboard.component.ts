@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -17,7 +17,7 @@ import { ButtonModule } from 'primeng/button';
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   supabase: SupabaseClient;
   user: any = null;
 
@@ -31,6 +31,10 @@ export class DashboardComponent implements OnInit {
   // Recent Leaves
   recentLeaves: any[] = [];
 
+  // Realtime subscriptions
+  private leavesChannel: any;
+  private userChannel: any;
+
   constructor(private authService: AuthService) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
@@ -42,7 +46,7 @@ export class DashboardComponent implements OnInit {
 
   setupSubscriptions() {
     // Subscribe to changes in leaves table
-    this.supabase
+    this.leavesChannel = this.supabase
       .channel('dashboard-leaves')
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'leaves' },
@@ -55,7 +59,7 @@ export class DashboardComponent implements OnInit {
       .subscribe();
 
     // Subscribe to changes in users table (for balance updates)
-    this.supabase
+    this.userChannel = this.supabase
       .channel('dashboard-user')
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${this.user?.id}` },
@@ -129,6 +133,16 @@ export class DashboardComponent implements OnInit {
       case 'REJECTED': return 'danger';
       case 'PENDING': return 'warn';
       default: return 'info';
+    }
+  }
+
+  ngOnDestroy() {
+    // Unsubscribe from Supabase realtime channels
+    if (this.leavesChannel) {
+      this.supabase.removeChannel(this.leavesChannel);
+    }
+    if (this.userChannel) {
+      this.supabase.removeChannel(this.userChannel);
     }
   }
 }
