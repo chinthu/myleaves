@@ -88,7 +88,7 @@
                         dataType="string" dateFormat="yy-mm-dd" [minDate]="getMinDateForEndDate()" styleClass="w-full"
                         inputStyleClass="w-full" required></p-calendar>
                     <small *ngIf="startDate && endDate" class="text-500">
-                        <span *ngIf="new Date(endDate) < new Date(startDate)" class="text-red-500">
+                        <span *ngIf="isEndDateBeforeStartDate()" class="text-red-500">
                             <i class="pi pi-exclamation-triangle mr-1"></i>End date cannot be less than start date.
                         </span>
                     </small>

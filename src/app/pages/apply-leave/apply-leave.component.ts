@@ -204,6 +204,15 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
     this.calculateDays();
   }
 
+  isEndDateBeforeStartDate(): boolean {
+    if (this.duration === 'LONG_LEAVE' && this.startDate && this.endDate) {
+      const start = new Date(this.startDate);
+      const end = new Date(this.endDate);
+      return end < start;
+    }
+    return false;
+  }
+
   async submitLeave() {
     this.loading = true;
 
