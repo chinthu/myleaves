@@ -165,11 +165,11 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
   }
 
   async loadAllLeaves() {
+    // Load all leaves for accurate chart data (especially for top users chart)
     const { data } = await this.supabase
       .from('leaves')
       .select('*, users:user_id(full_name, email)')
-      .order('created_at', { ascending: false })
-      .limit(100);
+      .order('created_at', { ascending: false });
 
     this.allLeaves = data || [];
     this.applyFilters();

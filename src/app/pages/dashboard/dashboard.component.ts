@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -22,7 +22,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { ChartModule } from 'primeng/chart';
 import { MessageService } from 'primeng/api';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, filter, take, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
@@ -111,26 +111,43 @@ export class DashboardComponent implements OnInit, OnDestroy {
   isViewingOtherUser = false;
   viewingUserName = '';
 
+  // Flags to prevent duplicate API calls
+  private isDataLoading = false;
+  private hasLoadedInitialData = false;
+
   constructor(
     private authService: AuthService,
     private leaveService: LeaveService,
     private messageService: MessageService,
     private loadingService: LoadingService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
   ) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
 
   setupSubscriptions() {
+    // Only setup subscriptions for current user's dashboard, not when viewing other users
+    if (this.isViewingOtherUser) {
+      return;
+    }
+
     // Subscribe to changes in leaves table
     this.leavesChannel = this.supabase
       .channel('dashboard-leaves')
       .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'leaves' },
+        { event: '*', schema: 'public', table: 'leaves', filter: `user_id=eq.${this.user?.id}` },
         (payload) => {
           console.log('Leave change detected:', payload);
-          this.loadLeaves();
+          // Run within Angular zone to ensure change detection
+          this.ngZone.run(() => {
+            // Only reload if not currently loading to prevent duplicate calls
+            if (!this.isDataLoading && this.user) {
+              this.loadLeaves(false);
+            }
+          });
         }
       )
       .subscribe();
@@ -142,10 +159,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
         { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${this.user?.id}` },
         (payload) => {
           console.log('User balance updated:', payload);
-          if (payload.new) {
-            this.casualBalance = (payload.new as any).balance_casual;
-            this.medicalBalance = (payload.new as any).balance_medical;
-          }
+          // Run within Angular zone to ensure change detection
+          this.ngZone.run(() => {
+            if (payload.new) {
+              this.casualBalance = (payload.new as any).balance_casual;
+              this.medicalBalance = (payload.new as any).balance_medical;
+              this.cdr.markForCheck(); // Trigger change detection
+            }
+          });
         }
       )
       .subscribe();
@@ -162,26 +183,46 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.selectedYear = currentYear;
 
     // Check if we're viewing another user's dashboard
-    this.route.params.pipe(takeUntil(this.destroy$)).subscribe(async params => {
+    this.route.params.pipe(
+      takeUntil(this.destroy$),
+      distinctUntilChanged((prev, curr) => prev['userId'] === curr['userId']) // Only fire if userId changes
+    ).subscribe(async params => {
+      // Reset flags when switching users
+      this.hasLoadedInitialData = false;
+      this.isDataLoading = false;
+      
       if (params['userId']) {
         this.viewingUserId = params['userId'];
         this.isViewingOtherUser = true;
         await this.loadUserData(params['userId']);
       } else {
         // Load current user's dashboard
-        this.loadCurrentUserDashboard();
+        this.isViewingOtherUser = false;
+        this.viewingUserId = null;
+        await this.loadCurrentUserDashboard();
       }
     });
   }
 
   async loadCurrentUserDashboard() {
+    // Prevent duplicate calls
+    if (this.isDataLoading || this.hasLoadedInitialData) {
+      return;
+    }
+
     // Show loading indicator immediately
     this.loadingService.show();
+    this.isDataLoading = true;
     
     this.authService.userProfile$
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        filter(profile => profile !== undefined), // Wait for profile to be defined
+        distinctUntilChanged((prev, curr) => prev?.id === curr?.id), // Only fire if user ID changes
+        take(1) // Only take the first valid emission
+      )
       .subscribe(async (userProfile) => {
-        if (userProfile) {
+        if (userProfile && !this.hasLoadedInitialData) {
           this.user = userProfile;
           this.casualBalance = this.user.balance_casual;
           this.medicalBalance = this.user.balance_medical;
@@ -192,6 +233,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
               this.loadCompOffs(false),
               this.loadLeaves(false)
             ]);
+            this.hasLoadedInitialData = true;
+            this.cdr.markForCheck(); // Trigger change detection after data is loaded
           } catch (error) {
             console.error('Error loading dashboard data:', error);
             this.messageService.add({ 
@@ -199,9 +242,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
               summary: 'Error', 
               detail: 'Failed to load dashboard data. Please refresh the page.' 
             });
+            this.cdr.markForCheck(); // Trigger change detection on error
           } finally {
             // Hide loading indicator after all data is loaded
             this.loadingService.hide();
+            this.isDataLoading = false;
+            this.cdr.markForCheck(); // Ensure UI updates
           }
           
           // Only setup subscriptions once user is loaded
@@ -211,13 +257,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
         } else if (userProfile === null) {
           // Profile is null (not loading, but no profile found)
           this.loadingService.hide();
+          this.isDataLoading = false;
         }
         // If userProfile is undefined, it's still loading, keep loading indicator
       });
   }
 
   async loadUserData(userId: string) {
+    if (!userId || this.isDataLoading) return;
+    
     this.loadingService.show();
+    this.isDataLoading = true;
     try {
       // Load user profile
       const { data: userData, error: userError } = await this.supabase
@@ -242,27 +292,55 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.loadCompOffsForUser(userId, false),
         this.loadLeavesForUser(userId, false)
       ]);
+      this.hasLoadedInitialData = true;
+      this.cdr.markForCheck(); // Trigger change detection after data is loaded
+    } catch (error) {
+      console.error('Error in loadUserData:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to load user data.'
+      });
+      this.cdr.markForCheck(); // Trigger change detection on error
     } finally {
       this.loadingService.hide();
+      this.isDataLoading = false;
+      this.cdr.markForCheck(); // Ensure UI updates
     }
   }
 
   async loadCompOffsForUser(userId: string, showLoading: boolean = true) {
+    if (!userId) return;
+    
     if (showLoading) {
       this.loadingService.show();
     }
     try {
-      const { data: compOffsWithDays } = await this.supabase
+      const { data: compOffsWithDays, error } = await this.supabase
         .from('user_comp_offs')
         .select('*, comp_offs(days)')
         .eq('user_id', userId)
         .eq('is_consumed', false);
 
+      if (error) {
+        console.error('Error loading comp-offs:', error);
+        this.compOffBalance = 0;
+        this.cdr.markForCheck(); // Trigger change detection
+        return;
+      }
+
       if (compOffsWithDays) {
         this.compOffBalance = compOffsWithDays.reduce((sum: number, item: any) => {
           return sum + (item.comp_offs?.days || 0);
         }, 0);
+      } else {
+        this.compOffBalance = 0;
       }
+      this.cdr.markForCheck(); // Trigger change detection after data update
+    } catch (error) {
+      console.error('Error in loadCompOffsForUser:', error);
+      this.compOffBalance = 0;
+      this.cdr.markForCheck(); // Trigger change detection on error
     } finally {
       if (showLoading) {
         this.loadingService.hide();
@@ -295,6 +373,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         // No data, initialize empty state
         this.processLeavesData([]);
       }
+      this.cdr.markForCheck(); // Trigger change detection after processing
     } catch (error: any) {
       console.error('Error in loadLeavesForUser:', error);
       this.messageService.add({ 
@@ -348,22 +427,33 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.totalLeavesTakenDays = approvedLeaves
         .reduce((sum: number, l: any) => sum + (l.days_count || 0), 0);
       
+      // Trigger change detection immediately for stats
+      this.cdr.markForCheck();
+      
       // Setup monthly chart asynchronously to avoid blocking UI
       this.chartLoading = true;
       this.monthlyLeavesChart = null; // Clear previous chart
+      this.cdr.markForCheck(); // Update UI to show loading state
       
-      // Use requestAnimationFrame for better performance
-      requestAnimationFrame(() => {
-        try {
-          this.setupMonthlyChart(data || []);
-        } catch (error) {
-          console.error('Error setting up monthly chart:', error);
-        } finally {
-          this.chartLoading = false;
-        }
+      // Use requestAnimationFrame for better performance, but run in Angular zone
+      this.ngZone.runOutsideAngular(() => {
+        requestAnimationFrame(() => {
+          // Run chart setup back in Angular zone to trigger change detection
+          this.ngZone.run(() => {
+            try {
+              this.setupMonthlyChart(data || []);
+            } catch (error) {
+              console.error('Error setting up monthly chart:', error);
+            } finally {
+              this.chartLoading = false;
+              this.cdr.markForCheck(); // Trigger change detection after chart is ready
+            }
+          });
+        });
       });
     } catch (error) {
       console.error('Error processing leaves data:', error);
+      this.cdr.markForCheck(); // Trigger change detection on error
     }
     
     // Note: casualBalance and medicalBalance are cumulative (current available balance)
@@ -507,17 +597,33 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   async onYearChange() {
-    if (!this.user) return;
+    if (!this.user || this.isDataLoading) return;
     
     // Show loading for year change since we're updating multiple things
     this.loadingService.show();
+    this.isDataLoading = true;
+    this.cdr.markForCheck(); // Update UI to show loading state
     try {
       const userId = this.isViewingOtherUser ? this.viewingUserId! : this.user.id;
-      await this.loadLeavesForUser(userId, false);
-      // Comp offs don't change with year, but reload to be safe
-      await this.loadCompOffsForUser(userId, false);
+      if (!userId) return;
+      
+      await Promise.all([
+        this.loadLeavesForUser(userId, false),
+        this.loadCompOffsForUser(userId, false) // Comp offs don't change with year, but reload to be safe
+      ]);
+      this.cdr.markForCheck(); // Trigger change detection after data is loaded
+    } catch (error) {
+      console.error('Error in onYearChange:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to load data for selected year.'
+      });
+      this.cdr.markForCheck(); // Trigger change detection on error
     } finally {
       this.loadingService.hide();
+      this.isDataLoading = false;
+      this.cdr.markForCheck(); // Ensure UI updates
     }
   }
 
