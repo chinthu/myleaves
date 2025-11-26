@@ -62,16 +62,16 @@ export class AuthService {
           if (!isPasswordReset && isOnLoginPage && profile) {
             // Use setTimeout to ensure navigation happens after Angular's change detection
             setTimeout(() => {
-              // HR, APPROVER, and ADMIN can access both personal dashboard and HR dashboard
+              // HR, TEAM_LEAD, and ADMIN can access both personal dashboard and HR dashboard
               // Default them to hr-dashboard on login, but they can navigate to personal dashboard via menu
-              // Only SUPER_ADMIN is always redirected to hr-dashboard
-              if (profile.role === 'SUPER_ADMIN') {
-                console.log('AuthService: Navigating to hr-dashboard for SUPER_ADMIN');
+              // Only SUPER_ADMIN and CEO are always redirected to hr-dashboard
+              if (profile.role === 'SUPER_ADMIN' || profile.role === 'CEO') {
+                console.log('AuthService: Navigating to hr-dashboard for SUPER_ADMIN/CEO');
                 this.router.navigate(['/hr-dashboard']).catch(err => {
                   console.error('Navigation error:', err);
                 });
-              } else if (profile.role === 'HR' || profile.role === 'APPROVER' || profile.role === 'ADMIN') {
-                // HR, APPROVER, and ADMIN default to hr-dashboard on login, but can access personal dashboard via menu
+              } else if (profile.role === 'HR' || profile.role === 'TEAM_LEAD' || profile.role === 'ADMIN') {
+                // HR, TEAM_LEAD, and ADMIN default to hr-dashboard on login, but can access personal dashboard via menu
                 console.log('AuthService: Navigating to hr-dashboard for role:', profile.role);
                 this.router.navigate(['/hr-dashboard']).catch(err => {
                   console.error('Navigation error:', err);
@@ -109,16 +109,16 @@ export class AuthService {
             // If user is on login page but already authenticated, redirect them
             if (isOnLoginPage) {
               setTimeout(() => {
-                // HR, APPROVER, and ADMIN can access both personal dashboard and HR dashboard
+                // HR, TEAM_LEAD, and ADMIN can access both personal dashboard and HR dashboard
                 // Default them to hr-dashboard on login, but they can navigate to personal dashboard via menu
-                // Only SUPER_ADMIN is always redirected to hr-dashboard
-                if (profile.role === 'SUPER_ADMIN') {
-                  console.log('AuthService: Redirecting SUPER_ADMIN from login to hr-dashboard');
+                // Only SUPER_ADMIN and CEO are always redirected to hr-dashboard
+                if (profile.role === 'SUPER_ADMIN' || profile.role === 'CEO') {
+                  console.log('AuthService: Redirecting SUPER_ADMIN/CEO from login to hr-dashboard');
                   this.router.navigate(['/hr-dashboard']).catch(err => {
                     console.error('Navigation error:', err);
                   });
-                } else if (profile.role === 'HR' || profile.role === 'APPROVER' || profile.role === 'ADMIN') {
-                  // HR, APPROVER, and ADMIN default to hr-dashboard on login, but can access personal dashboard via menu
+                } else if (profile.role === 'HR' || profile.role === 'TEAM_LEAD' || profile.role === 'ADMIN') {
+                  // HR, TEAM_LEAD, and ADMIN default to hr-dashboard on login, but can access personal dashboard via menu
                   console.log('AuthService: Redirecting from login to hr-dashboard for role:', profile.role);
                   this.router.navigate(['/hr-dashboard']).catch(err => {
                     console.error('Navigation error:', err);
@@ -131,7 +131,7 @@ export class AuthService {
               }, 100);
             }
             // If super admin/HR is on default route, redirect to hr-dashboard
-            else if (isOnDefaultRoute && (profile.role === 'SUPER_ADMIN' || profile.role === 'HR')) {
+            else if (isOnDefaultRoute && (profile.role === 'SUPER_ADMIN' || profile.role === 'CEO' || profile.role === 'HR')) {
               setTimeout(() => {
                 console.log('AuthService: Redirecting super admin/HR from default route to hr-dashboard');
                 this.router.navigate(['/hr-dashboard']).catch(err => {

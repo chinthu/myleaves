@@ -89,7 +89,7 @@ export class PublicHolidaysComponent implements OnInit, OnDestroy {
       .subscribe(async (userProfile) => {
         if (userProfile) {
           this.user = userProfile;
-          this.canManage = ['HR', 'ADMIN', 'SUPER_ADMIN'].includes(this.user?.role);
+          this.canManage = ['HR', 'ADMIN', 'SUPER_ADMIN', 'CEO'].includes(this.user?.role);
 
           if (this.user?.role === 'SUPER_ADMIN') {
             await this.loadOrganizations();

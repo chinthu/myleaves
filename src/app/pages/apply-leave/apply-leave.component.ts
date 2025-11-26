@@ -28,7 +28,6 @@ import { Subject, takeUntil } from 'rxjs';
 export class ApplyLeaveComponent implements OnInit, OnDestroy {
   supabase: SupabaseClient;
   user: any = null;
-  groups: any[] = [];
 
   // Form Fields
   leaveType: string = 'CASUAL'; // CASUAL, MEDICAL, COMP_OFF
@@ -38,7 +37,7 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
   halfDayDate: string = '';
   halfDaySlot: string = 'MORNING'; // MORNING, AFTERNOON
   reason: string = '';
-  selectedGroupId: string = '';
+  userGroupId: string | null = null; // User's group (auto-assigned)
 
   // Calculated
   daysCount: number = 0;
@@ -79,10 +78,31 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
           this.user = userProfile;
           // Load comp off balance first to determine if COMP_OFF should be shown
           await this.loadCompOffBalance();
-          // Then load groups
-          await this.loadGroups(this.user.organization_id);
+          // Load user's group (for auto-assignment)
+          await this.loadUserGroup();
         }
       });
+  }
+
+  async loadUserGroup() {
+    if (!this.user) return;
+    try {
+      // Get the first group the user belongs to
+      const { data, error } = await this.supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', this.user.id)
+        .limit(1)
+        .single();
+
+      if (!error && data) {
+        this.userGroupId = data.group_id;
+      } else if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Error loading user group:', error);
+      }
+    } catch (error) {
+      console.error('Error in loadUserGroup:', error);
+    }
   }
 
   async loadCompOffBalance() {
@@ -115,12 +135,6 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
     }
   }
 
-  async loadGroups(orgId: string) {
-    const { data, error } = await this.leaveService.getGroups(orgId);
-    if (data) {
-      this.groups = data;
-    }
-  }
 
   calculateDays() {
     if (this.duration === 'HALF_DAY') {
@@ -256,9 +270,9 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
         throw new Error('Please provide a reason for the leave.');
       }
 
-      // Validation: Approval group (mandatory for all leave types)
-      if (!this.selectedGroupId) {
-        throw new Error('Please select an approval group.');
+      // Validation: User must belong to a group
+      if (!this.userGroupId) {
+        throw new Error('You are not assigned to any group. Please contact your administrator to assign you to a group before applying for leave.');
       }
 
       // Validate dates are at least one month before today (can't select dates older than one month)
@@ -299,13 +313,14 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
       }
 
       // Prepare Payload
+      // assigned_group_id is automatically set to user's group
       const payload: any = {
         user_id: this.user.id,
         type: this.leaveType,
         status: 'PENDING',
         reason: this.reason,
         days_count: this.daysCount,
-        assigned_group_id: this.selectedGroupId
+        assigned_group_id: this.userGroupId // Auto-assigned based on user's group
       };
 
       if (this.duration === 'HALF_DAY') {

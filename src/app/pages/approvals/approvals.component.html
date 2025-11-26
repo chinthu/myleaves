@@ -51,7 +51,7 @@
                                         (onClick)="updateStatus(leave.id, 'APPROVED')" pTooltip="Approve"></p-button>
                                     <p-button icon="pi pi-times"
                                         styleClass="p-button-rounded p-button-danger p-button-text"
-                                        (onClick)="updateStatus(leave.id, 'REJECTED')" pTooltip="Reject"></p-button>
+                                        (onClick)="openRejectDialog(leave)" pTooltip="Reject"></p-button>
                                 </div>
                             </td>
                         </tr>
@@ -65,4 +65,37 @@
             </div>
         </div>
     </div>
+
+    <!-- Reject Leave Dialog -->
+    <p-dialog 
+        [(visible)]="showRejectDialog" 
+        [modal]="true" 
+        [style]="{width: '500px'}" 
+        [draggable]="false"
+        [resizable]="false"
+        header="Reject Leave"
+        [closable]="true"
+        (onHide)="closeRejectDialog()">
+        <div class="flex flex-column gap-3">
+            <div *ngIf="selectedLeave">
+                <p><strong>Employee:</strong> {{ selectedLeave.users?.full_name || selectedLeave.users?.email }}</p>
+                <p><strong>Leave Type:</strong> {{ selectedLeave.type }}</p>
+                <p><strong>Dates:</strong> {{ selectedLeave.start_date | date }} - {{ selectedLeave.end_date | date }}</p>
+            </div>
+            <div>
+                <label class="block mb-2">Rejection Reason <span class="text-red-500">*</span></label>
+                <textarea 
+                    [(ngModel)]="rejectionReason" 
+                    pInputTextarea 
+                    rows="4"
+                    placeholder="Please provide a reason for rejecting this leave"
+                    [style]="{width: '100%'}"
+                    required></textarea>
+            </div>
+        </div>
+        <ng-template pTemplate="footer">
+            <p-button label="Cancel" icon="pi pi-times" (onClick)="closeRejectDialog()" styleClass="p-button-text"></p-button>
+            <p-button label="Reject Leave" icon="pi pi-times" (onClick)="confirmReject()" styleClass="p-button-danger"></p-button>
+        </ng-template>
+    </p-dialog>
 </div>

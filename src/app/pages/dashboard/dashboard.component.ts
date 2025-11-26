@@ -738,13 +738,29 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.selectedLeave = null;
   }
 
+  onHalfDayToggle() {
+    // When half day is checked, set both dates to the same date (use start_date)
+    if (this.editForm.is_half_day && this.editForm.start_date) {
+      this.editForm.end_date = new Date(this.editForm.start_date);
+    }
+  }
+
   async saveEdit() {
     if (!this.selectedLeave) return;
 
     // Users can only edit pending leaves, so always reset to pending
+    let startDate = this.editForm.start_date;
+    let endDate = this.editForm.end_date;
+
+    // If half day, both dates must be the same
+    if (this.editForm.is_half_day) {
+      // Use start_date for both dates
+      endDate = startDate;
+    }
+
     const updates: any = {
-      start_date: this.editForm.start_date.toISOString().split('T')[0],
-      end_date: this.editForm.end_date.toISOString().split('T')[0],
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
       type: this.editForm.type,
       reason: this.editForm.reason,
       is_half_day: this.editForm.is_half_day,

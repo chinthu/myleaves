@@ -101,13 +101,13 @@ export class LoginComponent implements OnInit {
         if (data?.user) {
           const profile = await this.authService.loadUserProfile(data.user.id, false);
           if (profile) {
-            // HR, APPROVER, and ADMIN can access both personal dashboard and HR dashboard
+            // HR, TEAM_LEAD, and ADMIN can access both personal dashboard and HR dashboard
             // Default them to hr-dashboard on login, but they can navigate to personal dashboard via menu
-            // Only SUPER_ADMIN is always redirected to hr-dashboard
-            if (profile.role === 'SUPER_ADMIN') {
+            // Only SUPER_ADMIN and CEO are always redirected to hr-dashboard
+            if (profile.role === 'SUPER_ADMIN' || profile.role === 'CEO') {
               this.router.navigate(['/hr-dashboard']);
-            } else if (profile.role === 'HR' || profile.role === 'APPROVER' || profile.role === 'ADMIN') {
-              // HR, APPROVER, and ADMIN default to hr-dashboard on login
+            } else if (profile.role === 'HR' || profile.role === 'TEAM_LEAD' || profile.role === 'ADMIN') {
+              // HR, TEAM_LEAD, and ADMIN default to hr-dashboard on login
               this.router.navigate(['/hr-dashboard']);
             } else {
               this.router.navigate(['/']);

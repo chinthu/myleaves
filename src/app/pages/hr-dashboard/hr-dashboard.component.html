@@ -301,7 +301,7 @@
         </div>
         <div>
             <div class="flex align-items-center gap-2">
-                <p-checkbox [(ngModel)]="editForm.is_half_day" inputId="halfDayCheck" [binary]="true"></p-checkbox>
+                <p-checkbox [(ngModel)]="editForm.is_half_day" inputId="halfDayCheck" [binary]="true" (onChange)="onHalfDayToggle()"></p-checkbox>
                 <label for="halfDayCheck" style="cursor: pointer; margin: 0;">Half Day</label>
             </div>
         </div>

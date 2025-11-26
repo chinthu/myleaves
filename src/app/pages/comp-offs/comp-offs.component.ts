@@ -65,7 +65,7 @@ export class CompOffsComponent implements OnInit {
   async ngOnInit() {
     this.user = await this.authService.getUserProfile();
     if (this.user) {
-      this.canManage = ['HR', 'ADMIN', 'SUPER_ADMIN'].includes(this.user.role);
+      this.canManage = ['HR', 'ADMIN', 'SUPER_ADMIN', 'CEO'].includes(this.user.role);
       if (this.canManage) {
         await this.loadUsers();
       }

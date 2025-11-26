@@ -18,35 +18,35 @@
         </div>
 
         <nav class="sidebar-nav" *ngIf="user">
-            <!-- Dashboard - All users except Super Admin can access personal dashboard -->
-            <a *ngIf="user.role !== 'SUPER_ADMIN'" routerLink="/" routerLinkActive="active"
+            <!-- Dashboard - All users except Super Admin and CEO can access personal dashboard -->
+            <a *ngIf="user.role !== 'SUPER_ADMIN' && user.role !== 'CEO'" routerLink="/" routerLinkActive="active"
                 [routerLinkActiveOptions]="{exact: true}" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">🏠</span> Dashboard
             </a>
 
-            <!-- Apply Leave - Hidden for Super Admin -->
-            <a *ngIf="user.role !== 'SUPER_ADMIN'" routerLink="/leaves/apply" routerLinkActive="active" class="nav-item"
+            <!-- Apply Leave - Hidden for Super Admin and CEO -->
+            <a *ngIf="user.role !== 'SUPER_ADMIN' && user.role !== 'CEO'" routerLink="/leaves/apply" routerLinkActive="active" class="nav-item"
                 (click)="sidebarOpen = false">
                 <span class="icon">📝</span> Apply Leave
             </a>
 
             <!-- Approver Only -->
-            <a *ngIf="user.role === 'APPROVER' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'"
+            <a *ngIf="user.role === 'TEAM_LEAD' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'CEO'"
                 routerLink="/approvals" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">✅</span> Approvals
             </a>
 
             <!-- HR/Approver Dashboard -->
-            <a *ngIf="user.role === 'HR' || user.role === 'APPROVER' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'"
+            <a *ngIf="user.role === 'HR' || user.role === 'TEAM_LEAD' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'CEO'"
                 routerLink="/hr-dashboard" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">👥</span> HR Dashboard
             </a>
-            <a *ngIf="user.role === 'HR' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'"
+            <a *ngIf="user.role === 'HR' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'CEO'"
                 routerLink="/comp-offs" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">🎁</span> Comp Offs
             </a>
-            <!-- Leave Settings - Admin/Super Admin Only -->
-            <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'"
+            <!-- Leave Settings - Admin/Super Admin/CEO Only -->
+            <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'CEO'"
                 routerLink="/leave-settings" routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">⚙️</span> Leave Settings
             </a>
@@ -56,18 +56,18 @@
                 <span class="icon">📅</span> Public Holidays
             </a>
 
-            <!-- Admin/HR/Approver -->
-            <div class="nav-divider" *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'HR' || user.role === 'APPROVER'">Management</div>
+            <!-- Admin/HR/Approver/CEO -->
+            <div class="nav-divider" *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'HR' || user.role === 'TEAM_LEAD' || user.role === 'CEO'">Management</div>
 
-            <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'HR' || user.role === 'APPROVER'" routerLink="/users"
+            <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'HR' || user.role === 'TEAM_LEAD' || user.role === 'CEO'" routerLink="/users"
                 routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">👤</span> Users
             </a>
-            <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'HR'" routerLink="/leave-archives"
+            <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'HR' || user.role === 'CEO'" routerLink="/leave-archives"
                 routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">📦</span> Leave Archives
             </a>
-            <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'" routerLink="/groups"
+            <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'CEO'" routerLink="/groups"
                 routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">🏢</span> Groups
             </a>

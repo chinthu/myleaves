@@ -84,7 +84,7 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
         if (userProfile) {
           this.user = userProfile;
           this.isSuperAdmin = this.user.role === 'SUPER_ADMIN';
-          this.isAdmin = this.user.role === 'ADMIN';
+          this.isAdmin = this.user.role === 'ADMIN' || this.user.role === 'CEO';
 
           if (this.isSuperAdmin) {
             await this.loadOrganizations();

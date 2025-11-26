@@ -13,7 +13,7 @@ create table public.users (
   id uuid references auth.users not null primary key,
   email text not null,
   full_name text,
-  role text not null check (role in ('SUPER_ADMIN', 'ADMIN', 'HR', 'APPROVER', 'USER')),
+  role text not null check (role in ('SUPER_ADMIN', 'ADMIN', 'HR', 'TEAM_LEAD', 'USER', 'CEO')),
   organization_id uuid references public.organizations(id),
   designation text,
   balance_casual int default 0,
@@ -47,8 +47,9 @@ create table public.leaves (
   end_date date not null,
   is_half_day boolean default false,
   half_day_slot text check (half_day_slot in ('MORNING', 'AFTERNOON')),
-  status text default 'PENDING' check (status in ('PENDING', 'APPROVED', 'REJECTED')),
+  status text default 'PENDING' check (status in ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED')),
   assigned_group_id uuid references public.groups(id),
+  approved_by uuid references public.users(id),
   reason text,
   rejection_reason text,
   days_count numeric not null,
@@ -115,18 +116,18 @@ $$;
 create policy "Users can view own profile" on public.users
   for select using (auth.uid() = id);
 
--- Policy: HR/ADMIN/SUPER_ADMIN can view all users in their organization
+-- Policy: HR/ADMIN/SUPER_ADMIN/CEO can view all users in their organization
 drop policy if exists "users_select_org" on public.users;
 create policy "users_select_org" on public.users
   for select to authenticated using (
     auth.uid() = id OR
     exists (
       select 1 from public.get_user_role_org() 
-      where role in ('HR', 'ADMIN', 'SUPER_ADMIN')
+      where role in ('HR', 'ADMIN', 'SUPER_ADMIN', 'CEO')
     )
   );
 
--- Policy: HR/ADMIN/SUPER_ADMIN can update users in their organization
+-- Policy: HR/ADMIN/SUPER_ADMIN/CEO can update users in their organization
 drop policy if exists "users_update_org" on public.users;
 create policy "users_update_org" on public.users
   for update to authenticated using (
@@ -134,7 +135,7 @@ create policy "users_update_org" on public.users
     exists (
       select 1 from public.get_user_role_org() ur
       where (
-        (ur.role in ('HR', 'ADMIN', 'SUPER_ADMIN') AND ur.organization_id = users.organization_id) OR
+        (ur.role in ('HR', 'ADMIN', 'SUPER_ADMIN', 'CEO') AND ur.organization_id = users.organization_id) OR
         ur.role = 'SUPER_ADMIN'
       )
     )
@@ -144,7 +145,7 @@ create policy "users_update_org" on public.users
     exists (
       select 1 from public.get_user_role_org() ur
       where (
-        (ur.role in ('HR', 'ADMIN', 'SUPER_ADMIN') AND ur.organization_id = users.organization_id) OR
+        (ur.role in ('HR', 'ADMIN', 'SUPER_ADMIN', 'CEO') AND ur.organization_id = users.organization_id) OR
         ur.role = 'SUPER_ADMIN'
       )
     )
@@ -163,13 +164,13 @@ drop policy if exists "leave_settings_select" on public.leave_settings;
 create policy "leave_settings_select" on public.leave_settings
   for select to authenticated using (true);
 
--- Policy: Leave Settings - HR, ADMIN, SUPER_ADMIN can modify
+-- Policy: Leave Settings - HR, ADMIN, SUPER_ADMIN, CEO can modify
 drop policy if exists "leave_settings_modify" on public.leave_settings;
 create policy "leave_settings_modify" on public.leave_settings
   for all to authenticated using (
     exists (
       select 1 from public.get_user_role_org() 
-      where role in ('HR', 'ADMIN', 'SUPER_ADMIN')
+      where role in ('HR', 'ADMIN', 'SUPER_ADMIN', 'CEO')
     )
   );
 

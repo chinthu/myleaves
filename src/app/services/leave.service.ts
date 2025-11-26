@@ -106,10 +106,10 @@ export class LeaveService {
       // Step 2: Use days_count from database (already calculated correctly with half days)
       const leaveDays = leaveData.days_count || 0;
 
-      // Step 3: Update leave status to APPROVED
+      // Step 3: Update leave status to APPROVED and save who approved it
       const { error: updateError } = await this.supabase
         .from('leaves')
-        .update({ status: 'APPROVED' })
+        .update({ status: 'APPROVED', approved_by: approverId })
         .eq('id', leaveId);
 
       if (updateError) {

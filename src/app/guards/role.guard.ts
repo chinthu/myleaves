@@ -11,7 +11,7 @@ export const adminOnlyGuard: CanActivateFn = (route, state) => {
     filter(profile => profile !== undefined), // Wait for loading to complete
     take(1),
     map(profile => {
-      if (profile && (profile.role === 'ADMIN' || profile.role === 'SUPER_ADMIN')) {
+      if (profile && (profile.role === 'ADMIN' || profile.role === 'SUPER_ADMIN' || profile.role === 'CEO')) {
         return true;
       } else {
         // Redirect to dashboard if not authorized

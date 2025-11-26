@@ -82,16 +82,18 @@ export class UsersComponent implements OnInit, OnDestroy {
 
   roles = [
     { label: 'User', value: 'USER' },
-    { label: 'Approver', value: 'APPROVER' },
+    { label: 'Team Lead', value: 'TEAM_LEAD' },
     { label: 'HR Manager', value: 'HR' },
-    { label: 'Admin', value: 'ADMIN' }
+    { label: 'Admin', value: 'ADMIN' },
+    { label: 'CEO', value: 'CEO' }
   ];
 
   getRoleSeverity(role: string): "success" | "info" | "warning" | "danger" | "secondary" | "contrast" | undefined {
     switch (role) {
+      case 'CEO': return 'contrast';
       case 'ADMIN': return 'danger';
       case 'HR': return 'warning';
-      case 'APPROVER': return 'info';
+      case 'TEAM_LEAD': return 'info';
       case 'SUPER_ADMIN': return 'contrast';
       default: return 'success';
     }
@@ -125,8 +127,8 @@ export class UsersComponent implements OnInit, OnDestroy {
           this.currentUser = userProfile;
           this.isSuperAdmin = this.currentUser.role === 'SUPER_ADMIN';
           this.isHR = this.currentUser.role === 'HR';
-          this.isApprover = this.currentUser.role === 'APPROVER';
-          this.isAdmin = this.currentUser.role === 'ADMIN';
+          this.isApprover = this.currentUser.role === 'TEAM_LEAD';
+          this.isAdmin = this.currentUser.role === 'ADMIN' || this.currentUser.role === 'CEO';
 
           if (this.isSuperAdmin) {
             await this.loadOrganizations();

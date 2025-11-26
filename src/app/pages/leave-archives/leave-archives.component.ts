@@ -85,7 +85,7 @@ export class LeaveArchivesComponent implements OnInit, OnDestroy {
           this.user = userProfile;
           this.isSuperAdmin = this.user.role === 'SUPER_ADMIN';
           this.isHR = this.user.role === 'HR';
-          this.isAdmin = this.user.role === 'ADMIN';
+          this.isAdmin = this.user.role === 'ADMIN' || this.user.role === 'CEO';
 
           if (this.isSuperAdmin) {
             await this.loadOrganizations();
