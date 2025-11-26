@@ -1,14 +1,13 @@
-import { Component, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LoadingService } from '../../services/loading.service';
-import { Subject, takeUntil } from 'rxjs';
 
 @Component({
     selector: 'app-loading-spinner',
     standalone: true,
     imports: [CommonModule],
     template: `
-    <div *ngIf="loading" class="loading-overlay">
+    <div *ngIf="loading$ | async" class="loading-overlay">
       <div class="spinner"></div>
     </div>
   `,
@@ -41,25 +40,14 @@ import { Subject, takeUntil } from 'rxjs';
     `
     ]
 })
-export class LoadingSpinnerComponent implements OnDestroy {
-    loading = false;
-    private destroy$ = new Subject<void>();
+export class LoadingSpinnerComponent {
+    // ✅ BEST PRACTICE: Use async pipe - Angular handles subscription and change detection automatically
+    loading$ = this.loadingService.loading$;
 
-    constructor(
-        private loadingService: LoadingService,
-        private cdr: ChangeDetectorRef
-    ) {
-        // Subscribe to loading state and trigger change detection
-        this.loadingService.loading$
-            .pipe(takeUntil(this.destroy$))
-            .subscribe(loading => {
-                this.loading = loading;
-                this.cdr.markForCheck(); // Trigger change detection
-            });
-    }
-
-    ngOnDestroy() {
-        this.destroy$.next();
-        this.destroy$.complete();
+    constructor(private loadingService: LoadingService) {
+        // No manual subscription needed! Async pipe handles everything:
+        // - Automatic subscription/unsubscription
+        // - Automatic change detection
+        // - Better performance
     }
 }
