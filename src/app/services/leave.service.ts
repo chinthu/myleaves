@@ -350,7 +350,7 @@ export class LeaveService {
         // Update balance
         const { error: updateBalanceError } = await this.supabase
           .from('users')
-          .update({ 
+          .update({
             balance_casual: newCasualBalance,
             balance_medical: newMedicalBalance
           })
@@ -390,7 +390,7 @@ export class LeaveService {
       // Update leave with calculated days_count
       const { error: updateError } = await this.supabase
         .from('leaves')
-        .update({ 
+        .update({
           ...updates,
           days_count: newLeaveDays
         })
@@ -448,58 +448,38 @@ export class LeaveService {
   async getAllUsersLeaveStats(organizationId: string, year: number) {
     this.loadingService.show();
     try {
-      const startOfYear = `${year}-01-01`;
-      const endOfYear = `${year}-12-31`;
+      const { data, error } = await this.supabase
+        .rpc('get_user_leave_stats', {
+          p_organization_id: organizationId,
+          p_year: year
+        });
 
-      // Get all users in the organization
-      const { data: users, error: usersError } = await this.supabase
-        .from('users')
-        .select('id, full_name, email, balance_casual, balance_medical, organization_id')
-        .eq('organization_id', organizationId);
-
-      if (usersError) {
-        return { data: null, error: usersError };
+      if (error) {
+        return { data: null, error };
       }
 
-      // Get all leaves for the year for these users
-      const userIds = users?.map(u => u.id) || [];
-      if (userIds.length === 0) {
-        return { data: [], error: null };
+      return { data, error: null };
+    } finally {
+      this.loadingService.hide();
+    }
+  }
+
+  // Process year-end leaves and balances
+  async processYearEnd(organizationId: string, year: number, carryForwardEnabled: boolean) {
+    this.loadingService.show();
+    try {
+      const { error } = await this.supabase
+        .rpc('process_year_end', {
+          p_organization_id: organizationId,
+          p_year: year,
+          p_carry_forward_enabled: carryForwardEnabled
+        });
+
+      if (error) {
+        return { success: false, error };
       }
 
-      const { data: leaves, error: leavesError } = await this.supabase
-        .from('leaves')
-        .select('*')
-        .in('user_id', userIds)
-        .gte('start_date', startOfYear)
-        .lte('start_date', endOfYear);
-
-      if (leavesError) {
-        return { data: null, error: leavesError };
-      }
-
-      // Calculate stats for each user
-      const userStats = users?.map(user => {
-        const userLeaves = leaves?.filter(l => l.user_id === user.id) || [];
-        const approvedLeaves = userLeaves.filter(l => l.status === 'APPROVED');
-        
-        return {
-          ...user,
-          totalApplied: userLeaves.length,
-          pending: userLeaves.filter(l => l.status === 'PENDING').length,
-          approved: approvedLeaves.length,
-          rejected: userLeaves.filter(l => l.status === 'REJECTED').length,
-          cancelled: userLeaves.filter(l => l.status === 'CANCELLED').length,
-          casualLeavesTaken: approvedLeaves.filter(l => l.type === 'CASUAL').reduce((sum, l) => sum + (l.days_count || 0), 0),
-          medicalLeavesTaken: approvedLeaves.filter(l => l.type === 'MEDICAL').reduce((sum, l) => sum + (l.days_count || 0), 0),
-          compOffLeavesTaken: approvedLeaves.filter(l => l.type === 'COMP_OFF').reduce((sum, l) => sum + (l.days_count || 0), 0),
-          totalDaysTaken: approvedLeaves.reduce((sum, l) => sum + (l.days_count || 0), 0),
-          remainingCasual: user.balance_casual || 0,
-          remainingMedical: user.balance_medical || 0
-        };
-      }) || [];
-
-      return { data: userStats, error: null };
+      return { success: true, error: null };
     } finally {
       this.loadingService.hide();
     }

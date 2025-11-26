@@ -7,17 +7,15 @@
                 <p *ngIf="isApprover" class="text-muted m-0" style="font-size: 0.875rem;">
                     Showing users from your approval groups
                 </p>
-                <ng-select *ngIf="isSuperAdmin" [items]="organizations" [(ngModel)]="selectedOrgId"
-                    bindLabel="name" bindValue="id" (change)="onOrgChange()" placeholder="Select Organization"
+                <ng-select *ngIf="isSuperAdmin" [items]="organizations" [(ngModel)]="selectedOrgId" bindLabel="name"
+                    bindValue="id" (change)="onOrgChange()" placeholder="Select Organization"
                     [style]="{width: '15rem'}">
                 </ng-select>
             </div>
             <div class="flex gap-2 align-items-center">
-                <button pButton [label]="showLeaveStats ? 'Hide Leave Stats' : 'View Leave Stats'" 
-                    [icon]="showLeaveStats ? 'pi pi-eye-slash' : 'pi pi-eye'" 
-                    (click)="toggleLeaveStats()" 
-                    styleClass="p-button-outlined"
-                    *ngIf="!isApprover"></button>
+                <button pButton [label]="showLeaveStats ? 'Hide Leave Stats' : 'View Leave Stats'"
+                    [icon]="showLeaveStats ? 'pi pi-eye-slash' : 'pi pi-eye'" (click)="toggleLeaveStats()"
+                    styleClass="p-button-outlined" *ngIf="!isApprover"></button>
                 <button pButton label="Add User" icon="pi pi-plus" (click)="openAddModal()"
                     *ngIf="!isApprover"></button>
             </div>
@@ -28,16 +26,12 @@
     <div *ngIf="showLeaveStats" class="card mb-4">
         <div class="flex justify-content-between align-items-center mb-3">
             <h3 class="m-0">Leave Statistics ({{ selectedYear }})</h3>
-            <ng-select 
-                [(ngModel)]="selectedYear" 
-                [items]="availableYears"
-                bindLabel="label"
-                bindValue="value"
-                (change)="onYearChange()"
-                [style]="{width: '120px'}">
+            <ng-select [(ngModel)]="selectedYear" [items]="availableYears" bindLabel="label" bindValue="value"
+                (change)="onYearChange()" [style]="{width: '120px'}">
             </ng-select>
         </div>
-        <p-table [value]="userLeaveStats" [loading]="loadingStats" [rows]="10" [paginator]="true" responsiveLayout="scroll">
+        <p-table [value]="userLeaveStats" [loading]="loadingStats" [rows]="10" [paginator]="true"
+            responsiveLayout="scroll">
             <ng-template pTemplate="header">
                 <tr>
                     <th>Name</th>
@@ -59,17 +53,17 @@
                 <tr>
                     <td>{{ user.full_name }}</td>
                     <td>{{ user.email }}</td>
-                    <td>{{ user.totalApplied }}</td>
+                    <td>{{ user.total_applied }}</td>
                     <td><p-tag [value]="user.pending" severity="warning"></p-tag></td>
                     <td><p-tag [value]="user.approved" severity="success"></p-tag></td>
                     <td><p-tag [value]="user.rejected" severity="danger"></p-tag></td>
-                    <td>{{ user.casualLeavesTaken }}</td>
-                    <td>{{ user.medicalLeavesTaken }}</td>
-                    <td>{{ user.compOffLeavesTaken }}</td>
-                    <td><strong>{{ user.totalDaysTaken }}</strong></td>
-                    <td><strong>{{ user.remainingCasual }}</strong></td>
-                    <td><strong>{{ user.remainingMedical }}</strong></td>
-                    <td><strong>{{ user.remainingCompOffs || 0 }}</strong></td>
+                    <td>{{ user.casual_leaves_taken }}</td>
+                    <td>{{ user.medical_leaves_taken }}</td>
+                    <td>{{ user.comp_off_leaves_taken }}</td>
+                    <td><strong>{{ user.total_days_taken }}</strong></td>
+                    <td><strong>{{ user.balance_casual }}</strong></td>
+                    <td><strong>{{ user.balance_medical }}</strong></td>
+                    <td><strong>{{ user.remaining_comp_offs || 0 }}</strong></td>
                 </tr>
             </ng-template>
             <ng-template pTemplate="emptymessage">
@@ -103,8 +97,9 @@
                         <div class="flex gap-2">
                             <button pButton icon="pi pi-info-circle" class="p-button-rounded p-button-text"
                                 (click)="viewUserDashboard(user)" pTooltip="View Dashboard"></button>
-                            <button *ngIf="!isApprover" pButton icon="pi pi-pencil" class="p-button-rounded p-button-text"
-                                (click)="openEditModal(user)" pTooltip="Edit User"></button>
+                            <button *ngIf="!isApprover" pButton icon="pi pi-pencil"
+                                class="p-button-rounded p-button-text" (click)="openEditModal(user)"
+                                pTooltip="Edit User"></button>
                         </div>
                     </td>
                 </tr>
@@ -146,7 +141,7 @@
 
         <div class="field mt-3">
             <label for="role">Role</label>
-            <ng-select id="role" [items]="roles" [(ngModel)]="formData.role" bindLabel="label" bindValue="value" 
+            <ng-select id="role" [items]="roles" [(ngModel)]="formData.role" bindLabel="label" bindValue="value"
                 [clearable]="true" placeholder="Select Role" appendTo="body"></ng-select>
         </div>
 
