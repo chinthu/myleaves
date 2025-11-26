@@ -65,6 +65,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   compOffLeavesTaken = 0;
   totalLeavesTakenDays = 0;
   
+  // Excess casual leaves (taken after balance becomes zero)
+  excessCasualLeaves: any = {
+    hasExcess: false,
+    excessTotal: 0,
+    monthlyBreakdown: [],
+    zeroBalanceDate: null
+  };
+  
   // Charts
   monthlyLeavesChart: any;
   chartOptions: any;
@@ -233,7 +241,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
             // Load all data in parallel
             await Promise.all([
               this.loadCompOffs(false),
-              this.loadLeaves(false)
+              this.loadLeaves(false),
+              this.loadExcessCasualLeaves(false)
             ]);
             this.hasLoadedInitialData = true;
             this.cdr.markForCheck(); // Trigger change detection after data is loaded
@@ -292,7 +301,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       // Load user's data
       await Promise.all([
         this.loadCompOffsForUser(userId, false),
-        this.loadLeavesForUser(userId, false)
+        this.loadLeavesForUser(userId, false),
+        this.loadExcessCasualLeavesForUser(userId, false)
       ]);
       this.hasLoadedInitialData = true;
       this.cdr.markForCheck(); // Trigger change detection after data is loaded
@@ -400,6 +410,49 @@ export class DashboardComponent implements OnInit, OnDestroy {
   async loadLeaves(showLoading: boolean = false) {
     if (!this.user) return;
     await this.loadLeavesForUser(this.user.id, showLoading);
+  }
+
+  async loadExcessCasualLeaves(showLoading: boolean = false) {
+    if (!this.user) return;
+    await this.loadExcessCasualLeavesForUser(this.user.id, showLoading);
+  }
+
+  async loadExcessCasualLeavesForUser(userId: string, showLoading: boolean = false) {
+    if (showLoading) {
+      this.loadingService.show();
+    }
+    try {
+      const { data, error } = await this.leaveService.getExcessCasualLeaves(userId, this.selectedYear);
+      if (error) {
+        console.error('Error loading excess casual leaves:', error);
+        this.excessCasualLeaves = {
+          hasExcess: false,
+          excessTotal: 0,
+          monthlyBreakdown: [],
+          zeroBalanceDate: null
+        };
+        return;
+      }
+      this.excessCasualLeaves = data || {
+        hasExcess: false,
+        excessTotal: 0,
+        monthlyBreakdown: [],
+        zeroBalanceDate: null
+      };
+      this.cdr.markForCheck();
+    } catch (error: any) {
+      console.error('Error in loadExcessCasualLeavesForUser:', error);
+      this.excessCasualLeaves = {
+        hasExcess: false,
+        excessTotal: 0,
+        monthlyBreakdown: [],
+        zeroBalanceDate: null
+      };
+    } finally {
+      if (showLoading) {
+        this.loadingService.hide();
+      }
+    }
   }
 
   processLeavesData(data: any[]) {
@@ -611,7 +664,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       
       await Promise.all([
         this.loadLeavesForUser(userId, false),
-        this.loadCompOffsForUser(userId, false) // Comp offs don't change with year, but reload to be safe
+        this.loadCompOffsForUser(userId, false), // Comp offs don't change with year, but reload to be safe
+        this.loadExcessCasualLeavesForUser(userId, false)
       ]);
       this.cdr.markForCheck(); // Trigger change detection after data is loaded
     } catch (error) {

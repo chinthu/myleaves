@@ -44,6 +44,10 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
   daysCount: number = 0;
   minDate: Date = new Date(); // Minimum date: one month before today
 
+  // Comp Off Balance
+  compOffBalance: number = 0;
+  canApplyCompOff: boolean = false; // Start as false, will be updated after loading balance
+
   // UI State
   loading: boolean = false;
   message: string = '';
@@ -70,12 +74,45 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
 
     this.authService.userProfile$
       .pipe(takeUntil(this.destroy$))
-      .subscribe((userProfile) => {
+      .subscribe(async (userProfile) => {
         if (userProfile && userProfile.organization_id) {
           this.user = userProfile;
-          this.loadGroups(this.user.organization_id);
+          // Load comp off balance first to determine if COMP_OFF should be shown
+          await this.loadCompOffBalance();
+          // Then load groups
+          await this.loadGroups(this.user.organization_id);
         }
       });
+  }
+
+  async loadCompOffBalance() {
+    if (!this.user) return;
+    try {
+      const { data, error } = await this.leaveService.getUserCompOffBalance(this.user.id);
+      if (!error && data !== null) {
+        this.compOffBalance = data;
+        this.canApplyCompOff = this.compOffBalance > 0;
+        
+        // If user has COMP_OFF selected but no balance, switch to CASUAL
+        if (this.leaveType === 'COMP_OFF' && !this.canApplyCompOff) {
+          this.leaveType = 'CASUAL';
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Comp Off Not Available',
+            detail: 'You do not have any pending comp off balance. Please select a different leave type.'
+          });
+        }
+      } else {
+        // If there's an error or no data, ensure COMP_OFF is hidden
+        this.canApplyCompOff = false;
+        this.compOffBalance = 0;
+      }
+    } catch (error) {
+      console.error('Error loading comp off balance:', error);
+      // On error, ensure COMP_OFF is hidden
+      this.canApplyCompOff = false;
+      this.compOffBalance = 0;
+    }
   }
 
   async loadGroups(orgId: string) {
@@ -103,9 +140,9 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
       // Validate end date is not before start date
       if (end < start) {
         this.messageService.add({
-          severity: 'warn',
+          severity: 'error',
           summary: 'Invalid Date Range',
-          detail: 'End date cannot be before start date.'
+          detail: 'End date cannot be less than start date. Please select a valid end date.'
         });
         this.endDate = '';
         this.daysCount = 0;
@@ -120,31 +157,97 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
     }
   }
 
+  onLeaveTypeChange() {
+    // Only check comp off balance when user tries to select COMP_OFF
+    // Medical and Casual leaves should always be available - do nothing for them
+    if (this.leaveType === 'COMP_OFF') {
+      if (!this.canApplyCompOff) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Comp Off Not Available',
+          detail: `You do not have any pending comp off balance (Current balance: ${this.compOffBalance} days). Please select a different leave type.`
+        });
+        // Reset to CASUAL if COMP_OFF is not available
+        this.leaveType = 'CASUAL';
+      }
+    }
+    // Medical and Casual leaves are always enabled - no action needed
+  }
+
   getMinDateForEndDate(): Date | null {
     // For end date in long leave, it should be at least the start date
     if (this.duration === 'LONG_LEAVE' && this.startDate) {
       const start = new Date(this.startDate);
       start.setHours(0, 0, 0, 0);
-      // Return the later of: start date or one month before today
+      // Return the start date (end date cannot be less than start date)
+      // But also ensure it's not before the minimum allowed date
       return start > this.minDate ? start : this.minDate;
     }
     return this.minDate;
+  }
+
+  onStartDateChange() {
+    // When start date changes for long leave, reset end date if it's now invalid
+    if (this.duration === 'LONG_LEAVE' && this.startDate && this.endDate) {
+      const start = new Date(this.startDate);
+      const end = new Date(this.endDate);
+      if (end < start) {
+        this.endDate = '';
+        this.daysCount = 0;
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'End Date Reset',
+          detail: 'End date has been reset because it was less than the new start date.'
+        });
+      }
+    }
+    this.calculateDays();
   }
 
   async submitLeave() {
     this.loading = true;
 
     try {
-      // Validation
-      if (this.duration === 'LONG_LEAVE' && (!this.startDate || !this.endDate)) {
-        throw new Error('Please select start and end dates.');
+      // Validation: Comp Off balance check
+      if (this.leaveType === 'COMP_OFF' && !this.canApplyCompOff) {
+        throw new Error('You do not have any pending comp off balance. Please select a different leave type.');
       }
-      if (this.duration === 'HALF_DAY' && !this.halfDayDate) {
-        throw new Error('Please select a date for half day leave.');
+
+      // Validation: Required fields based on leave type
+      if (!this.leaveType) {
+        throw new Error('Please select a leave type.');
       }
-      if (this.duration === 'FULL_DAY' && !this.startDate) {
-        throw new Error('Please select a date.');
+
+      // Validation: Duration and dates
+      if (this.duration === 'LONG_LEAVE') {
+        if (!this.startDate || !this.endDate) {
+          throw new Error('Please select both start and end dates for long leave.');
+        }
+        // Validate end date is not less than start date
+        const start = new Date(this.startDate);
+        const end = new Date(this.endDate);
+        if (end < start) {
+          throw new Error('End date cannot be less than start date.');
+        }
+      } else if (this.duration === 'HALF_DAY') {
+        if (!this.halfDayDate) {
+          throw new Error('Please select a date for half day leave.');
+        }
+        if (!this.halfDaySlot) {
+          throw new Error('Please select a half day slot (Morning or Afternoon).');
+        }
+      } else if (this.duration === 'FULL_DAY') {
+        if (!this.startDate) {
+          throw new Error('Please select a date for full day leave.');
+        }
       }
+
+      // Validation: Reason (mandatory for all leave types)
+      if (!this.reason || this.reason.trim() === '') {
+        throw new Error('Please provide a reason for the leave.');
+      }
+
+      // Validation: Approval group (mandatory for all leave types)
       if (!this.selectedGroupId) {
         throw new Error('Please select an approval group.');
       }
@@ -180,8 +283,9 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
           const minDateStr = oneMonthBefore.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
           throw new Error(`End date must be at least ${minDateStr} (one month before today).`);
         }
+        // Additional validation: end date cannot be less than start date
         if (startDateToValidate && endDateToValidate < startDateToValidate) {
-          throw new Error('End date cannot be before start date.');
+          throw new Error('End date cannot be less than start date. Please select a valid end date.');
         }
       }
 

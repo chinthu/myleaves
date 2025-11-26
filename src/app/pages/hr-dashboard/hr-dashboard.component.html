@@ -45,6 +45,78 @@
                 <div class="stat-label">Low Balance Alerts</div>
             </div>
         </div>
+
+        <div class="stat-card" *ngIf="usersWithExcessCasual > 0" style="border-left: 4px solid #dc2626;">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #fecaca 0%, #fee2e2 100%);">
+                <i class="pi pi-exclamation-circle" style="color: #dc2626;"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value" style="color: #dc2626;">{{usersWithExcessCasual}}</div>
+                <div class="stat-label">Excess Casual Leaves</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excess Casual Leaves Section -->
+    <div class="section-card" *ngIf="usersWithExcessCasualLeaves.length > 0" style="background: #fef2f2; border-left: 4px solid #dc2626; margin-bottom: 1.5rem;">
+        <div class="section-header">
+            <h2 style="color: #dc2626; margin: 0;">
+                <i class="pi pi-exclamation-triangle"></i> Users with Excess Casual Leaves
+            </h2>
+            <p style="color: #7f1d1d; margin: 0.5rem 0 0 0; font-size: 0.875rem;">
+                Employees who have taken casual leaves after their available balance became zero
+            </p>
+        </div>
+
+        <p-table [value]="usersWithExcessCasualLeaves" [paginator]="true" [rows]="10" responsiveLayout="scroll" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Employee</th>
+                    <th>Total Excess Days</th>
+                    <th>Balance Reached Zero</th>
+                    <th>Monthly Breakdown</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-user>
+                <tr>
+                    <td>
+                        <div class="employee-cell">
+                            <div class="employee-avatar">{{user.full_name?.charAt(0) || 'U'}}</div>
+                            <div>
+                                <div class="font-medium">{{user.full_name || user.email}}</div>
+                                <div class="text-sm text-500">{{user.email}}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span style="font-weight: 600; color: #dc2626; font-size: 1.1rem;">
+                            {{user.excessTotal}} {{user.excessTotal === 1 ? 'day' : 'days'}}
+                        </span>
+                    </td>
+                    <td>
+                        <span *ngIf="user.zeroBalanceDate" style="color: #991b1b;">
+                            {{user.zeroBalanceDate | date:'MMM d, y'}}
+                        </span>
+                        <span *ngIf="!user.zeroBalanceDate" style="color: #6B6B6B;">-</span>
+                    </td>
+                    <td>
+                        <div *ngIf="user.monthlyBreakdown && user.monthlyBreakdown.length > 0" 
+                             style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            <span *ngFor="let month of user.monthlyBreakdown" 
+                                  style="padding: 0.25rem 0.5rem; background: white; border-radius: 4px; border: 1px solid #fecaca; font-size: 0.875rem;">
+                                <strong>{{month.month}}:</strong> {{month.days}} {{month.days === 1 ? 'day' : 'days'}}
+                            </span>
+                        </div>
+                        <span *ngIf="!user.monthlyBreakdown || user.monthlyBreakdown.length === 0" style="color: #6B6B6B;">-</span>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td [attr.colspan]="4" class="text-center p-4">No users with excess casual leaves</td>
+                </tr>
+            </ng-template>
+        </p-table>
     </div>
 
     <!-- Today's Leaves Section -->

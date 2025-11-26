@@ -5,7 +5,7 @@
 
             <!-- Leave Type -->
             <div class="flex flex-column gap-2">
-                <label class="font-bold text-900">Leave Type</label>
+                <label class="font-bold text-900">Leave Type <span class="text-red-500">*</span></label>
                 <div class="flex flex-wrap gap-4">
                     <div class="field-radiobutton flex align-items-center">
                         <p-radioButton name="leaveType" value="CASUAL" [(ngModel)]="leaveType"
@@ -17,7 +17,7 @@
                             inputId="lt2"></p-radioButton>
                         <label for="lt2" class="ml-2 cursor-pointer">Medical Leave</label>
                     </div>
-                    <div class="field-radiobutton flex align-items-center">
+                    <div class="field-radiobutton flex align-items-center" *ngIf="canApplyCompOff">
                         <p-radioButton name="leaveType" value="COMP_OFF" [(ngModel)]="leaveType"
                             inputId="lt3"></p-radioButton>
                         <label for="lt3" class="ml-2 cursor-pointer">Comp Off</label>
@@ -27,7 +27,7 @@
 
             <!-- Duration Type -->
             <div class="flex flex-column gap-2">
-                <label class="font-bold text-900">Duration</label>
+                <label class="font-bold text-900">Duration <span class="text-red-500">*</span></label>
                 <div class="flex flex-wrap gap-4">
                     <div class="field-radiobutton flex align-items-center">
                         <p-radioButton name="duration" value="FULL_DAY" [(ngModel)]="duration" inputId="d1"
@@ -47,46 +47,51 @@
                 </div>
             </div>
 
-            <!-- Date Selection -->
-            <div class="p-3 bg-yellow-50 border-round text-yellow-800 mb-3" style="border-left: 4px solid #ed8936;">
-                <i class="pi pi-info-circle mr-2"></i>
-                <strong>Note:</strong> Leave can only be applied for dates starting from {{minDate | date:'MMM d, y'}} (one month before today). Dates before this cannot be selected.
+            <!-- Date Selection Note -->
+            <div class="p-2 bg-yellow-50 border-round text-yellow-800 mb-2" style="border-left: 3px solid #ed8936; font-size: 0.75rem;">
+                <i class="pi pi-info-circle mr-1" style="font-size: 0.875rem;"></i>
+                <span><strong>Note:</strong> Leave can only be applied for dates starting from {{minDate | date:'MMM d, y'}} (one month before today). Dates before this cannot be selected.</span>
             </div>
             
             <div *ngIf="duration === 'HALF_DAY'" class="grid formgrid">
                 <div class="col-12 md:col-6 flex flex-column gap-2">
-                    <label class="font-bold text-900">Select Date</label>
+                    <label class="font-bold text-900">Select Date <span class="text-red-500">*</span></label>
                     <p-calendar [(ngModel)]="halfDayDate" name="halfDayDate" [showIcon]="true" dataType="string"
-                        dateFormat="yy-mm-dd" [minDate]="minDate" styleClass="w-full" inputStyleClass="w-full"></p-calendar>
+                        dateFormat="yy-mm-dd" [minDate]="minDate" styleClass="w-full" inputStyleClass="w-full" required></p-calendar>
                 </div>
                 <div class="col-12 md:col-6 flex flex-column gap-2">
-                    <label class="font-bold text-900">Select Slot</label>
+                    <label class="font-bold text-900">Select Slot <span class="text-red-500">*</span></label>
                     <ng-select
                         [items]="[{label: 'Morning (First Half)', value: 'MORNING'}, {label: 'Afternoon (Second Half)', value: 'AFTERNOON'}]"
                         [(ngModel)]="halfDaySlot" name="halfDaySlot" bindLabel="label" bindValue="value"
-                        [clearable]="true"
-                        [style]="{width: '100%'}" placeholder="Select Slot"></ng-select>
+                        [clearable]="false"
+                        [style]="{width: '100%'}" placeholder="Select Slot" required></ng-select>
                 </div>
             </div>
 
             <div *ngIf="duration === 'FULL_DAY'" class="flex flex-column gap-2">
-                <label class="font-bold text-900">Select Date</label>
+                <label class="font-bold text-900">Select Date <span class="text-red-500">*</span></label>
                 <p-calendar [(ngModel)]="startDate" name="startDate" [showIcon]="true" (onSelect)="calculateDays()"
-                    dataType="string" dateFormat="yy-mm-dd" [minDate]="minDate" styleClass="w-full" inputStyleClass="w-full"></p-calendar>
+                    dataType="string" dateFormat="yy-mm-dd" [minDate]="minDate" styleClass="w-full" inputStyleClass="w-full" required></p-calendar>
             </div>
 
             <div *ngIf="duration === 'LONG_LEAVE'" class="grid formgrid">
                 <div class="col-12 md:col-6 flex flex-column gap-2">
-                    <label class="font-bold text-900">Start Date</label>
-                    <p-calendar [(ngModel)]="startDate" name="startDate" [showIcon]="true" (onSelect)="calculateDays()"
+                    <label class="font-bold text-900">Start Date <span class="text-red-500">*</span></label>
+                    <p-calendar [(ngModel)]="startDate" name="startDate" [showIcon]="true" (onSelect)="onStartDateChange()"
                         dataType="string" dateFormat="yy-mm-dd" [minDate]="minDate" styleClass="w-full"
-                        inputStyleClass="w-full"></p-calendar>
+                        inputStyleClass="w-full" required></p-calendar>
                 </div>
                 <div class="col-12 md:col-6 flex flex-column gap-2">
-                    <label class="font-bold text-900">End Date</label>
+                    <label class="font-bold text-900">End Date <span class="text-red-500">*</span></label>
                     <p-calendar [(ngModel)]="endDate" name="endDate" [showIcon]="true" (onSelect)="calculateDays()"
                         dataType="string" dateFormat="yy-mm-dd" [minDate]="getMinDateForEndDate()" styleClass="w-full"
-                        inputStyleClass="w-full"></p-calendar>
+                        inputStyleClass="w-full" required></p-calendar>
+                    <small *ngIf="startDate && endDate" class="text-500">
+                        <span *ngIf="new Date(endDate) < new Date(startDate)" class="text-red-500">
+                            <i class="pi pi-exclamation-triangle mr-1"></i>End date cannot be less than start date.
+                        </span>
+                    </small>
                 </div>
             </div>
 
@@ -98,16 +103,16 @@
 
             <!-- Reason -->
             <div class="flex flex-column gap-2">
-                <label class="font-bold text-900">Reason</label>
+                <label class="font-bold text-900">Reason <span class="text-red-500">*</span></label>
                 <textarea pInputTextarea [(ngModel)]="reason" name="reason" rows="3"
-                    placeholder="Enter reason for leave" class="w-full"></textarea>
+                    placeholder="Enter reason for leave" class="w-full" required></textarea>
             </div>
 
             <!-- Approval Group -->
             <div class="flex flex-column gap-2">
-                <label class="font-bold text-900">Assign to Approval Team</label>
+                <label class="font-bold text-900">Assign to Approval Team <span class="text-red-500">*</span></label>
                 <ng-select [items]="groups" [(ngModel)]="selectedGroupId" name="selectedGroupId" bindLabel="name"
-                    bindValue="id" [clearable]="true" placeholder="Select a group" [style]="{width: '100%'}"></ng-select>
+                    bindValue="id" [clearable]="false" placeholder="Select a group" [style]="{width: '100%'}" required></ng-select>
             </div>
 
             <div class="flex justify-content-end gap-3 mt-4">

@@ -350,7 +350,7 @@ export class LeaveService {
         // Update balance
         const { error: updateBalanceError } = await this.supabase
           .from('users')
-          .update({
+          .update({ 
             balance_casual: newCasualBalance,
             balance_medical: newMedicalBalance
           })
@@ -390,7 +390,7 @@ export class LeaveService {
       // Update leave with calculated days_count
       const { error: updateError } = await this.supabase
         .from('leaves')
-        .update({
+        .update({ 
           ...updates,
           days_count: newLeaveDays
         })
@@ -448,38 +448,58 @@ export class LeaveService {
   async getAllUsersLeaveStats(organizationId: string, year: number) {
     this.loadingService.show();
     try {
-      const { data, error } = await this.supabase
-        .rpc('get_user_leave_stats', {
-          p_organization_id: organizationId,
-          p_year: year
-        });
+      const startOfYear = `${year}-01-01`;
+      const endOfYear = `${year}-12-31`;
 
-      if (error) {
-        return { data: null, error };
+      // Get all users in the organization
+      const { data: users, error: usersError } = await this.supabase
+        .from('users')
+        .select('id, full_name, email, balance_casual, balance_medical, organization_id')
+        .eq('organization_id', organizationId);
+
+      if (usersError) {
+        return { data: null, error: usersError };
       }
 
-      return { data, error: null };
-    } finally {
-      this.loadingService.hide();
-    }
-  }
-
-  // Process year-end leaves and balances
-  async processYearEnd(organizationId: string, year: number, carryForwardEnabled: boolean) {
-    this.loadingService.show();
-    try {
-      const { error } = await this.supabase
-        .rpc('process_year_end', {
-          p_organization_id: organizationId,
-          p_year: year,
-          p_carry_forward_enabled: carryForwardEnabled
-        });
-
-      if (error) {
-        return { success: false, error };
+      // Get all leaves for the year for these users
+      const userIds = users?.map(u => u.id) || [];
+      if (userIds.length === 0) {
+        return { data: [], error: null };
       }
 
-      return { success: true, error: null };
+      const { data: leaves, error: leavesError } = await this.supabase
+        .from('leaves')
+        .select('*')
+        .in('user_id', userIds)
+        .gte('start_date', startOfYear)
+        .lte('start_date', endOfYear);
+
+      if (leavesError) {
+        return { data: null, error: leavesError };
+      }
+
+      // Calculate stats for each user
+      const userStats = users?.map(user => {
+        const userLeaves = leaves?.filter(l => l.user_id === user.id) || [];
+        const approvedLeaves = userLeaves.filter(l => l.status === 'APPROVED');
+        
+        return {
+          ...user,
+          totalApplied: userLeaves.length,
+          pending: userLeaves.filter(l => l.status === 'PENDING').length,
+          approved: approvedLeaves.length,
+          rejected: userLeaves.filter(l => l.status === 'REJECTED').length,
+          cancelled: userLeaves.filter(l => l.status === 'CANCELLED').length,
+          casualLeavesTaken: approvedLeaves.filter(l => l.type === 'CASUAL').reduce((sum, l) => sum + (l.days_count || 0), 0),
+          medicalLeavesTaken: approvedLeaves.filter(l => l.type === 'MEDICAL').reduce((sum, l) => sum + (l.days_count || 0), 0),
+          compOffLeavesTaken: approvedLeaves.filter(l => l.type === 'COMP_OFF').reduce((sum, l) => sum + (l.days_count || 0), 0),
+          totalDaysTaken: approvedLeaves.reduce((sum, l) => sum + (l.days_count || 0), 0),
+          remainingCasual: user.balance_casual || 0,
+          remainingMedical: user.balance_medical || 0
+        };
+      }) || [];
+
+      return { data: userStats, error: null };
     } finally {
       this.loadingService.hide();
     }
@@ -502,6 +522,191 @@ export class LeaveService {
       return { data: balance, error: null };
     } finally {
       this.loadingService.hide();
+    }
+  }
+
+  // Calculate excess casual leaves (taken after balance becomes zero) and monthly breakdown
+  async getExcessCasualLeaves(userId: string, year: number) {
+    try {
+      // Get user's organization to find initial balance
+      const { data: userData, error: userError } = await this.supabase
+        .from('users')
+        .select('organization_id, balance_casual')
+        .eq('id', userId)
+        .single();
+
+      if (userError || !userData) {
+        return { data: null, error: userError || new Error('User not found') };
+      }
+
+      // Get initial casual leave balance for the year (from leave_settings or default 12)
+      const { data: leaveSettings } = await this.supabase
+        .from('leave_settings')
+        .select('default_casual_leaves')
+        .eq('organization_id', userData.organization_id)
+        .eq('year', year)
+        .single();
+
+      const initialBalance = leaveSettings?.default_casual_leaves || 12;
+
+      // Get all approved casual leaves for the year, sorted by start_date
+      const startOfYear = `${year}-01-01`;
+      const endOfYear = `${year}-12-31`;
+
+      const { data: casualLeaves, error: leavesError } = await this.supabase
+        .from('leaves')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('type', 'CASUAL')
+        .eq('status', 'APPROVED')
+        .gte('start_date', startOfYear)
+        .lte('start_date', endOfYear)
+        .order('start_date', { ascending: true });
+
+      if (leavesError) {
+        return { data: null, error: leavesError };
+      }
+
+      if (!casualLeaves || casualLeaves.length === 0) {
+        return {
+          data: {
+            hasExcess: false,
+            excessTotal: 0,
+            monthlyBreakdown: [],
+            zeroBalanceDate: null
+          },
+          error: null
+        };
+      }
+
+      // Calculate running balance to find when it becomes zero
+      let runningBalance = initialBalance;
+      let zeroBalanceDate: string | null = null;
+      let balanceReachedZero = false;
+      const monthlyBreakdown: { month: string; days: number; monthIndex: number }[] = [];
+
+      // Initialize monthly breakdown
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      for (let i = 0; i < 12; i++) {
+        monthlyBreakdown.push({ month: monthNames[i], days: 0, monthIndex: i });
+      }
+
+      // Process each leave chronologically
+      for (const leave of casualLeaves) {
+        const leaveDays = leave.days_count || 0;
+        const leaveDate = leave.start_date;
+
+        if (leaveDays <= 0) continue;
+
+        // Calculate excess days for this leave
+        let excessDays = 0;
+        
+        // Check if this leave would make balance zero or negative
+        if (!balanceReachedZero && runningBalance > 0) {
+          if (runningBalance - leaveDays <= 0) {
+            // This is the leave that makes balance zero or negative
+            zeroBalanceDate = leaveDate;
+            balanceReachedZero = true;
+            
+            // Calculate excess: if balance goes negative, only count the excess part
+            if (runningBalance - leaveDays < 0) {
+              excessDays = leaveDays - runningBalance;
+            } else {
+              // Balance becomes exactly zero, no excess for this leave
+              excessDays = 0;
+            }
+          }
+        } else if (balanceReachedZero) {
+          // After balance reached zero, all days are excess
+          excessDays = leaveDays;
+        }
+
+        // Deduct from running balance (balance can't go below 0 in the system)
+        runningBalance = Math.max(0, runningBalance - leaveDays);
+
+        // If there are excess days, add to monthly breakdown
+        if (excessDays > 0) {
+          const leaveMonth = new Date(leaveDate).getMonth();
+          if (leaveMonth >= 0 && leaveMonth < 12) {
+            monthlyBreakdown[leaveMonth].days += excessDays;
+          }
+        }
+      }
+
+      // Calculate total excess days
+      const excessTotal = monthlyBreakdown.reduce((sum, month) => sum + month.days, 0);
+
+      // Filter out months with zero excess days
+      const filteredMonthlyBreakdown = monthlyBreakdown.filter(m => m.days > 0);
+
+      return {
+        data: {
+          hasExcess: excessTotal > 0,
+          excessTotal: excessTotal,
+          monthlyBreakdown: filteredMonthlyBreakdown,
+          zeroBalanceDate: zeroBalanceDate,
+          initialBalance: initialBalance
+        },
+        error: null
+      };
+    } catch (error: any) {
+      return { data: null, error: error };
+    }
+  }
+
+  // Get excess casual leaves for all users in an organization (for HR dashboard)
+  async getAllUsersExcessCasualLeaves(organizationId: string, year: number) {
+    try {
+      // Get initial casual leave balance for the year
+      const { data: leaveSettings } = await this.supabase
+        .from('leave_settings')
+        .select('default_casual_leaves')
+        .eq('organization_id', organizationId)
+        .eq('year', year)
+        .single();
+
+      const initialBalance = leaveSettings?.default_casual_leaves || 12;
+
+      // Get all users in the organization
+      const { data: users, error: usersError } = await this.supabase
+        .from('users')
+        .select('id, full_name, email')
+        .eq('organization_id', organizationId);
+
+      if (usersError) {
+        return { data: null, error: usersError };
+      }
+
+      if (!users || users.length === 0) {
+        return { data: [], error: null };
+      }
+
+      // Get excess casual leaves for each user
+      const usersWithExcess = await Promise.all(
+        users.map(async (user) => {
+          const excessData = await this.getExcessCasualLeaves(user.id, year);
+          if (excessData.error || !excessData.data) {
+            return null;
+          }
+
+          if (excessData.data.hasExcess) {
+            return {
+              ...user,
+              excessTotal: excessData.data.excessTotal,
+              monthlyBreakdown: excessData.data.monthlyBreakdown,
+              zeroBalanceDate: excessData.data.zeroBalanceDate
+            };
+          }
+          return null;
+        })
+      );
+
+      // Filter out null values (users without excess)
+      const filtered = usersWithExcess.filter(u => u !== null);
+
+      return { data: filtered, error: null };
+    } catch (error: any) {
+      return { data: null, error: error };
     }
   }
 }

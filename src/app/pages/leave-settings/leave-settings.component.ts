@@ -16,7 +16,6 @@ import { LoadingService } from '../../services/loading.service';
 import { CheckboxModule } from 'primeng/checkbox';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { LeaveService } from '../../services/leave.service';
 
 @Component({
   selector: 'app-leave-settings',
@@ -28,7 +27,7 @@ import { LeaveService } from '../../services/leave.service';
     CardModule,
     ButtonModule,
     InputNumberModule,
-    NgSelectModule,
+        NgSelectModule,
     ConfirmDialogModule,
     CheckboxModule
   ],
@@ -71,15 +70,14 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
-    private loadingService: LoadingService,
-    private leaveService: LeaveService
+    private loadingService: LoadingService
   ) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
 
   ngOnInit() {
     this.checkIfFirstWeekOfJanuary();
-
+    
     this.authService.userProfile$
       .pipe(takeUntil(this.destroy$))
       .subscribe(async (userProfile) => {
@@ -109,7 +107,7 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
     const currentYear = now.getFullYear();
     const janFirst = new Date(currentYear, 0, 1); // January 1st
     const janEighth = new Date(currentYear, 0, 8); // January 8th
-
+    
     // Check if current date is between Jan 1 and Jan 7 (first week)
     this.isFirstWeekOfJanuary = now >= janFirst && now < janEighth;
   }
@@ -119,9 +117,9 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
       this.canProcessYearEnd = false;
       return;
     }
-
+    
     const previousYear = this.settings.year - 1;
-
+    
     // Check if year-end processing has been done for the previous year
     // Since settings are now one per organization, we check the archives table
     // to see if any archives exist for the previous year
@@ -176,10 +174,10 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
         // If table doesn't exist, show helpful error
         if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
           console.error('leave_settings table does not exist. Please run the schema migration.');
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Database Error',
-            detail: 'The leave_settings table does not exist. Please run the SQL migration from leave_settings_schema.sql in your Supabase SQL editor.'
+          this.messageService.add({ 
+            severity: 'error', 
+            summary: 'Database Error', 
+            detail: 'The leave_settings table does not exist. Please run the SQL migration from leave_settings_schema.sql in your Supabase SQL editor.' 
           });
         }
         // Reset to defaults if no record found (not an error, just no data)
@@ -207,16 +205,16 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
           year_end_processed: false
         };
       }
-
+      
       // Settings are now loaded (one per organization, not per year)
       // Note: checkCanProcessYearEnd() is called separately after loadSettings() to avoid duplicate calls
     } catch (error: any) {
       console.error('Error loading settings:', error);
       if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Database Error',
-          detail: 'The leave_settings table does not exist. Please run the SQL migration from leave_settings_schema.sql in your Supabase SQL editor.'
+        this.messageService.add({ 
+          severity: 'error', 
+          summary: 'Database Error', 
+          detail: 'The leave_settings table does not exist. Please run the SQL migration from leave_settings_schema.sql in your Supabase SQL editor.' 
         });
       }
     } finally {
@@ -293,7 +291,7 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
 
     this.loading = true;
     this.loadingService.show();
-
+    
     try {
       // Step 1: Reload settings for the selected year to ensure we have the latest values
       await this.loadSettings();
@@ -324,7 +322,7 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
       // Step 4: Reset all user balances to default values from leave settings
       const defaultCasual = this.settings.default_casual_leaves || 12;
       const defaultMedical = this.settings.default_medical_leaves || 12;
-
+      
       // Update all users in the organization
       // Note: This requires an RLS policy that allows HR/ADMIN/SUPER_ADMIN to update users in their organization
       const { error: updateError } = await this.supabase
@@ -341,7 +339,7 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
         console.warn('Bulk update failed, trying individual updates:', updateError);
         let updateErrors: any[] = [];
         let successCount = 0;
-
+        
         for (const userId of userIds) {
           const { error: individualError } = await this.supabase
             .from('users')
@@ -365,17 +363,17 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
         }
       }
 
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Reset Complete',
-        detail: `Successfully deleted all leaves and reset balances for ${users.length} user(s) in this organization for year ${this.settings.year}.`
+      this.messageService.add({ 
+        severity: 'success', 
+        summary: 'Reset Complete', 
+        detail: `Successfully deleted all leaves and reset balances for ${users.length} user(s) in this organization for year ${this.settings.year}.` 
       });
     } catch (error: any) {
       console.error('Reset error:', error);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: error.message || 'Failed to reset leaves and balances'
+      this.messageService.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: error.message || 'Failed to reset leaves and balances' 
       });
     } finally {
       this.loading = false;
@@ -508,15 +506,129 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
 
     try {
       const previousYear = this.settings.year - 1;
+      const currentYear = this.settings.year;
+      const startOfPreviousYear = `${previousYear}-01-01`;
+      const endOfPreviousYear = `${previousYear}-12-31`;
 
-      // Call the RPC via service
-      const { success, error } = await this.leaveService.processYearEnd(
-        this.selectedOrgId,
-        previousYear,
-        carryForwardEnabled
-      );
+      // Step 1: Get all users in the organization
+      const { data: users, error: usersError } = await this.supabase
+        .from('users')
+        .select('id, balance_casual, balance_medical, balance_compoff')
+        .eq('organization_id', this.selectedOrgId);
 
-      if (error) throw error;
+      if (usersError) throw usersError;
+      if (!users || users.length === 0) {
+        this.messageService.add({ severity: 'warn', summary: 'No Users', detail: 'No users found in this organization' });
+        return;
+      }
+
+      // Step 2: For each user, archive their previous year's data
+      for (const user of users) {
+        // Get all leaves for the previous year
+        const { data: previousYearLeaves, error: leavesError } = await this.supabase
+          .from('leaves')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('start_date', startOfPreviousYear)
+          .lte('start_date', endOfPreviousYear);
+
+        if (leavesError) {
+          console.error(`Error fetching leaves for user ${user.id}:`, leavesError);
+          continue;
+        }
+
+        // Calculate statistics
+        const approvedLeaves = previousYearLeaves?.filter(l => l.status === 'APPROVED') || [];
+        const casualTaken = approvedLeaves.filter(l => l.type === 'CASUAL').reduce((sum, l) => sum + (l.days_count || 0), 0);
+        const medicalTaken = approvedLeaves.filter(l => l.type === 'MEDICAL').reduce((sum, l) => sum + (l.days_count || 0), 0);
+        const compOffTaken = approvedLeaves.filter(l => l.type === 'COMP_OFF').reduce((sum, l) => sum + (l.days_count || 0), 0);
+        const totalDaysTaken = approvedLeaves.reduce((sum, l) => sum + (l.days_count || 0), 0);
+
+        // Create archive record
+        const archiveData = {
+          user_id: user.id,
+          organization_id: this.selectedOrgId,
+          year: previousYear,
+          total_leaves_applied: previousYearLeaves?.length || 0,
+          total_leaves_approved: approvedLeaves.length,
+          total_leaves_pending: previousYearLeaves?.filter(l => l.status === 'PENDING').length || 0,
+          total_leaves_rejected: previousYearLeaves?.filter(l => l.status === 'REJECTED').length || 0,
+          total_leaves_cancelled: previousYearLeaves?.filter(l => l.status === 'CANCELLED').length || 0,
+          casual_leaves_taken: casualTaken,
+          medical_leaves_taken: medicalTaken,
+          comp_off_leaves_taken: compOffTaken,
+          total_days_taken: totalDaysTaken,
+          balance_casual_at_year_end: user.balance_casual || 0,
+          balance_medical_at_year_end: user.balance_medical || 0,
+          balance_compoff_at_year_end: user.balance_compoff || 0,
+          carry_forward_casual: this.settings.carry_forward_enabled ? (user.balance_casual || 0) : 0,
+          carry_forward_medical: 0 // Medical leaves are never carried forward
+        };
+
+        // Upsert archive (insert or update if exists)
+        const { error: archiveError } = await this.supabase
+          .from('leave_archives')
+          .upsert(archiveData, { onConflict: 'user_id,organization_id,year' });
+
+        if (archiveError) {
+          console.error(`Error archiving for user ${user.id}:`, archiveError);
+          continue;
+        }
+
+        // Step 3: Mark all previous year leaves as archived
+        if (previousYearLeaves && previousYearLeaves.length > 0) {
+          const leaveIds = previousYearLeaves.map(l => l.id);
+          const { error: archiveLeavesError } = await this.supabase
+            .from('leaves')
+            .update({ is_archived: true, archived_at: new Date().toISOString() })
+            .in('id', leaveIds);
+
+          if (archiveLeavesError) {
+            console.error(`Error archiving leaves for user ${user.id}:`, archiveLeavesError);
+          }
+        }
+
+        // Step 4: Update user balances for new year
+        const defaultCasual = this.settings.default_casual_leaves || 12;
+        const defaultMedical = this.settings.default_medical_leaves || 12;
+
+        let newCasualBalance = defaultCasual;
+        let newMedicalBalance = defaultMedical; // Medical always resets to default
+
+        if (this.settings.carry_forward_enabled) {
+          // Only carry forward casual leaves, medical always resets to default
+          newCasualBalance = defaultCasual + Math.max(0, user.balance_casual || 0);
+        }
+
+        const { error: updateError } = await this.supabase
+          .from('users')
+          .update({
+            balance_casual: newCasualBalance,
+            balance_medical: newMedicalBalance,
+            balance_compoff: 0 // Reset comp off at year end
+          })
+          .eq('id', user.id);
+
+        if (updateError) {
+          console.error(`Error updating user ${user.id}:`, updateError);
+        }
+      }
+
+      // Step 5: Mark year-end processing as complete
+      // Update the year_end_processed flag in settings (one per organization)
+      // Note: We still check archives to determine if a specific year has been processed
+      const { error: updateSettingsError } = await this.supabase
+        .from('leave_settings')
+        .update({
+          year_end_processed: true,
+          year_end_processed_at: new Date().toISOString()
+        })
+        .eq('organization_id', this.selectedOrgId);
+
+      if (updateSettingsError) {
+        console.error('Error updating year_end_processed flag:', updateSettingsError);
+        // Don't fail the whole operation if this update fails
+      }
 
       // Reload settings and check if year-end processing can still be done
       await this.loadSettings();

@@ -28,7 +28,7 @@ import { Router } from '@angular/router';
     ButtonModule,
     DialogModule,
     InputTextModule,
-    NgSelectModule,
+        NgSelectModule,
     ToastModule,
     TagModule,
     TooltipModule
@@ -67,17 +67,17 @@ export class UsersComponent implements OnInit, OnDestroy {
   isHR = false;
   isApprover = false;
   isAdmin = false;
-
+  
   // For Approver: Get users in their approval groups
   approvalGroupIds: string[] = [];
-
+  
   // Leave Stats View
   showLeaveStats = false;
   selectedYear: number = new Date().getFullYear();
   availableYears: any[] = [];
   userLeaveStats: any[] = [];
   loadingStats = false;
-
+  
   private destroy$ = new Subject<void>();
 
   roles = [
@@ -107,7 +107,7 @@ export class UsersComponent implements OnInit, OnDestroy {
     private ngZone: NgZone
   ) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
-
+    
     // Generate available years
     const currentYear = new Date().getFullYear();
     this.availableYears = [
@@ -217,7 +217,7 @@ export class UsersComponent implements OnInit, OnDestroy {
         if (gmError) throw gmError;
 
         const userIds = groupMembers?.map((gm: any) => gm.user_id) || [];
-
+        
         if (userIds.length > 0) {
           query = query.in('id', userIds);
         } else {
@@ -244,7 +244,7 @@ export class UsersComponent implements OnInit, OnDestroy {
       }
 
       console.log('Loaded users:', data?.length || 0, 'users');
-
+      
       if (data) {
         this.users = data;
       } else {
@@ -253,10 +253,10 @@ export class UsersComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck(); // Trigger change detection after data is loaded
     } catch (error: any) {
       console.error('Error loading users:', error);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: error.message || 'Failed to load users'
+      this.messageService.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: error.message || 'Failed to load users' 
       });
       this.users = [];
       this.cdr.markForCheck(); // Trigger change detection on error
@@ -381,17 +381,22 @@ export class UsersComponent implements OnInit, OnDestroy {
 
   async loadUserLeaveStats() {
     if (!this.selectedOrgId) return;
-
+    
     this.loadingStats = true;
     try {
       const { data, error } = await this.leaveService.getAllUsersLeaveStats(this.selectedOrgId, this.selectedYear);
-
+      
       if (error) {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load leave statistics.' });
         return;
       }
-
-      // Data now includes remainingCompOffs from the RPC
+      
+      // Get comp off balances for each user
+      for (const userStat of data || []) {
+        const { data: compOffBalance } = await this.leaveService.getUserCompOffBalance(userStat.id);
+        (userStat as any).remainingCompOffs = compOffBalance || 0;
+      }
+      
       this.userLeaveStats = data || [];
       this.cdr.markForCheck(); // Trigger change detection after data is loaded
     } catch (error: any) {

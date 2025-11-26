@@ -64,6 +64,10 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
   totalUsers = 0;
   pendingRequests = 0;
   lowBalanceUsers = 0;
+  usersWithExcessCasual = 0;
+
+  // Excess Casual Leaves
+  usersWithExcessCasualLeaves: any[] = [];
 
   // Filters
   selectedYear: number = new Date().getFullYear();
@@ -147,7 +151,8 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
       await Promise.all([
         this.loadTodaysLeaves(),
         this.loadAllLeaves(),
-        this.loadQuickStats()
+        this.loadQuickStats(),
+        this.loadExcessCasualLeaves()
       ]);
       this.cdr.markForCheck(); // Trigger change detection after data is loaded
     } catch (error) {
@@ -219,6 +224,32 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
       .or('balance_casual.lt.3,balance_medical.lt.3');
     this.lowBalanceUsers = lowBalanceCount || 0;
     this.cdr.markForCheck(); // Trigger change detection
+  }
+
+  async loadExcessCasualLeaves() {
+    if (!this.user?.organization_id) return;
+    
+    try {
+      const { data, error } = await this.leaveService.getAllUsersExcessCasualLeaves(
+        this.user.organization_id,
+        this.selectedYear
+      );
+      
+      if (error) {
+        console.error('Error loading excess casual leaves:', error);
+        this.usersWithExcessCasualLeaves = [];
+        this.usersWithExcessCasual = 0;
+        return;
+      }
+      
+      this.usersWithExcessCasualLeaves = data || [];
+      this.usersWithExcessCasual = this.usersWithExcessCasualLeaves.length;
+      this.cdr.markForCheck();
+    } catch (error: any) {
+      console.error('Error in loadExcessCasualLeaves:', error);
+      this.usersWithExcessCasualLeaves = [];
+      this.usersWithExcessCasual = 0;
+    }
   }
 
   setupCharts() {
@@ -523,7 +554,10 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
 
   async onYearChange() {
     // Reload data when year changes
-    await this.loadAllLeaves();
+    await Promise.all([
+      this.loadAllLeaves(),
+      this.loadExcessCasualLeaves()
+    ]);
     this.setupCharts();
   }
 

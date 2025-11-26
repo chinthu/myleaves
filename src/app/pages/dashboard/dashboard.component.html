@@ -23,6 +23,10 @@
                 <div class="stat-taken" style="font-size: 0.875rem; color: #f56565; margin-top: 0.25rem; font-weight: 600;">
                     Taken: {{ casualLeavesTaken }} days
                 </div>
+                <div *ngIf="excessCasualLeaves.hasExcess" 
+                     style="font-size: 0.75rem; color: #dc2626; margin-top: 0.5rem; font-weight: 600; padding: 0.25rem 0.5rem; background: #fee2e2; border-radius: 4px; display: inline-block;">
+                    ⚠️ Excess: {{ excessCasualLeaves.excessTotal }} days
+                </div>
             </div>
         </div>
 
@@ -59,6 +63,35 @@
             <div class="stat-content">
                 <div class="stat-value">{{ pendingLeaves }}</div>
                 <div class="stat-label">Pending Requests</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excess Casual Leaves Alert -->
+    <div *ngIf="excessCasualLeaves.hasExcess" class="section-card" style="background: #fef2f2; border-left: 4px solid #dc2626; margin-bottom: 1.5rem;">
+        <div class="section-header">
+            <h2 style="color: #dc2626; margin: 0;">
+                <i class="pi pi-exclamation-triangle"></i> Excess Casual Leaves Taken
+            </h2>
+        </div>
+        <div style="padding: 1rem 0;">
+            <p style="color: #7f1d1d; margin-bottom: 1rem;">
+                You have taken <strong>{{ excessCasualLeaves.excessTotal }} days</strong> of casual leave after your available balance became zero.
+                <span *ngIf="excessCasualLeaves.zeroBalanceDate">
+                    Balance reached zero on <strong>{{ excessCasualLeaves.zeroBalanceDate | date:'MMM d, y' }}</strong>.
+                </span>
+            </p>
+            <div *ngIf="excessCasualLeaves.monthlyBreakdown.length > 0">
+                <h3 style="font-size: 1rem; color: #991b1b; margin-bottom: 0.75rem;">Monthly Breakdown:</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem;">
+                    <div *ngFor="let month of excessCasualLeaves.monthlyBreakdown" 
+                         style="padding: 0.75rem; background: white; border-radius: 6px; border: 1px solid #fecaca;">
+                        <div style="font-weight: 600; color: #991b1b; font-size: 0.875rem;">{{ month.month }}</div>
+                        <div style="font-size: 1.25rem; font-weight: bold; color: #dc2626; margin-top: 0.25rem;">
+                            {{ month.days }} {{ month.days === 1 ? 'day' : 'days' }}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
