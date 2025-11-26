@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
@@ -111,7 +111,9 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private leaveService: LeaveService,
     private messageService: MessageService,
-    private confirmationService: ConfirmationService
+    private confirmationService: ConfirmationService,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
   ) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
@@ -130,16 +132,20 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
 
   async loadDashboardData() {
     this.loading = true;
+    this.cdr.markForCheck(); // Update UI to show loading state
     try {
       await Promise.all([
         this.loadTodaysLeaves(),
         this.loadAllLeaves(),
         this.loadQuickStats()
       ]);
+      this.cdr.markForCheck(); // Trigger change detection after data is loaded
     } catch (error) {
       console.error('Error loading dashboard:', error);
+      this.cdr.markForCheck(); // Trigger change detection on error
     } finally {
       this.loading = false;
+      this.cdr.markForCheck(); // Ensure UI updates
     }
   }
 
@@ -162,6 +168,7 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
       medical: this.todaysLeaves.filter(l => l.type === 'MEDICAL').length,
       compOff: this.todaysLeaves.filter(l => l.type === 'COMP_OFF').length
     };
+    this.cdr.markForCheck(); // Trigger change detection
   }
 
   async loadAllLeaves() {
@@ -173,6 +180,7 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
 
     this.allLeaves = data || [];
     this.applyFilters();
+    this.cdr.markForCheck(); // Trigger change detection
   }
 
   async loadQuickStats() {
@@ -195,92 +203,101 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
       .select('*', { count: 'exact', head: true })
       .or('balance_casual.lt.3,balance_medical.lt.3');
     this.lowBalanceUsers = lowBalanceCount || 0;
+    this.cdr.markForCheck(); // Trigger change detection
   }
 
   setupCharts() {
-    // Leave Type Distribution (Pie Chart)
-    const typeCounts = {
-      casual: this.allLeaves.filter(l => l.type === 'CASUAL' && l.status === 'APPROVED').length,
-      medical: this.allLeaves.filter(l => l.type === 'MEDICAL' && l.status === 'APPROVED').length,
-      compOff: this.allLeaves.filter(l => l.type === 'COMP_OFF' && l.status === 'APPROVED').length
-    };
+    // Run chart setup outside Angular zone for performance, then trigger change detection
+    this.ngZone.runOutsideAngular(() => {
+      // Leave Type Distribution (Pie Chart)
+      const typeCounts = {
+        casual: this.allLeaves.filter(l => l.type === 'CASUAL' && l.status === 'APPROVED').length,
+        medical: this.allLeaves.filter(l => l.type === 'MEDICAL' && l.status === 'APPROVED').length,
+        compOff: this.allLeaves.filter(l => l.type === 'COMP_OFF' && l.status === 'APPROVED').length
+      };
 
-    this.leaveTypeChart = {
-      labels: ['Casual Leave', 'Medical Leave', 'Comp Off'],
-      datasets: [{
-        data: [typeCounts.casual, typeCounts.medical, typeCounts.compOff],
-        backgroundColor: ['#667eea', '#f56565', '#48bb78']
-      }]
-    };
+      this.leaveTypeChart = {
+        labels: ['Casual Leave', 'Medical Leave', 'Comp Off'],
+        datasets: [{
+          data: [typeCounts.casual, typeCounts.medical, typeCounts.compOff],
+          backgroundColor: ['#667eea', '#f56565', '#48bb78']
+        }]
+      };
 
-    // Leave Status Distribution (Donut Chart)
-    const statusCounts = {
-      approved: this.allLeaves.filter(l => l.status === 'APPROVED').length,
-      pending: this.allLeaves.filter(l => l.status === 'PENDING').length,
-      rejected: this.allLeaves.filter(l => l.status === 'REJECTED').length
-    };
+      // Leave Status Distribution (Donut Chart)
+      const statusCounts = {
+        approved: this.allLeaves.filter(l => l.status === 'APPROVED').length,
+        pending: this.allLeaves.filter(l => l.status === 'PENDING').length,
+        rejected: this.allLeaves.filter(l => l.status === 'REJECTED').length
+      };
 
-    this.leaveStatusChart = {
-      labels: ['Approved', 'Pending', 'Rejected'],
-      datasets: [{
-        data: [statusCounts.approved, statusCounts.pending, statusCounts.rejected],
-        backgroundColor: ['#48bb78', '#ed8936', '#f56565']
-      }]
-    };
+      this.leaveStatusChart = {
+        labels: ['Approved', 'Pending', 'Rejected'],
+        datasets: [{
+          data: [statusCounts.approved, statusCounts.pending, statusCounts.rejected],
+          backgroundColor: ['#48bb78', '#ed8936', '#f56565']
+        }]
+      };
 
-    // Top Users by Leaves (Horizontal Stacked Bar Chart)
-    this.setupTopUsersLeavesChart();
+      // Top Users by Leaves (Horizontal Stacked Bar Chart)
+      this.setupTopUsersLeavesChart();
 
-    // Leave Trend (Last 6 months - Line Chart)
-    const last6Months = this.getLast6MonthsData();
-    this.leaveTrendChart = {
-      labels: last6Months.map(m => m.month),
-      datasets: [{
-        label: 'Leaves Taken',
-        data: last6Months.map(m => m.count),
-        borderColor: '#667eea',
-        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+      // Leave Trend (Last 6 months - Line Chart)
+      const last6Months = this.getLast6MonthsData();
+      this.leaveTrendChart = {
+        labels: last6Months.map(m => m.month),
+        datasets: [{
+          label: 'Leaves Taken',
+          data: last6Months.map(m => m.count),
+          borderColor: '#667eea',
+          backgroundColor: 'rgba(102, 126, 234, 0.1)',
         tension: 0.4,
         fill: true
       }]
     };
 
-    this.chartOptions = {
-      plugins: {
-        legend: {
-          labels: {
-            font: {
-              family: 'Roboto'
-            }
-          }
-        },
-        tooltip: {
-          callbacks: {
-            footer: (tooltipItems: any) => {
-              const totals = (this.topUsersLeavesChart as any)?.totals;
-              if (totals && tooltipItems.length > 0) {
-                const dataIndex = tooltipItems[0].dataIndex;
-                return `Total: ${totals[dataIndex].toFixed(1)} days`;
+      this.chartOptions = {
+        plugins: {
+          legend: {
+            labels: {
+              font: {
+                family: 'Roboto'
               }
-              return '';
+            }
+          },
+          tooltip: {
+            callbacks: {
+              footer: (tooltipItems: any) => {
+                const totals = (this.topUsersLeavesChart as any)?.totals;
+                if (totals && tooltipItems.length > 0) {
+                  const dataIndex = tooltipItems[0].dataIndex;
+                  return `Total: ${totals[dataIndex].toFixed(1)} days`;
+                }
+                return '';
+              }
             }
           }
-        }
-      },
-      indexAxis: 'y', // Horizontal bar chart
-      scales: {
-        x: {
-          beginAtZero: true,
-          stacked: true,
-          ticks: {
-            stepSize: 1
-          }
         },
-        y: {
-          stacked: true
+        indexAxis: 'y', // Horizontal bar chart
+        scales: {
+          x: {
+            beginAtZero: true,
+            stacked: true,
+            ticks: {
+              stepSize: 1
+            }
+          },
+          y: {
+            stacked: true
+          }
         }
-      }
-    };
+      };
+      
+      // Run back in Angular zone and trigger change detection
+      this.ngZone.run(() => {
+        this.cdr.markForCheck();
+      });
+    });
   }
 
   setupTopUsersLeavesChart() {

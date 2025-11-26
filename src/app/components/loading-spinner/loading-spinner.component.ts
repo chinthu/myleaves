@@ -1,14 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LoadingService } from '../../services/loading.service';
-import { Observable } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
     selector: 'app-loading-spinner',
     standalone: true,
     imports: [CommonModule],
     template: `
-    <div *ngIf="loading$ | async" class="loading-overlay">
+    <div *ngIf="loading" class="loading-overlay">
       <div class="spinner"></div>
     </div>
   `,
@@ -41,9 +41,25 @@ import { Observable } from 'rxjs';
     `
     ]
 })
-export class LoadingSpinnerComponent {
-    loading$: Observable<boolean>;
-    constructor(private loadingService: LoadingService) {
-        this.loading$ = this.loadingService.loading$;
+export class LoadingSpinnerComponent implements OnDestroy {
+    loading = false;
+    private destroy$ = new Subject<void>();
+
+    constructor(
+        private loadingService: LoadingService,
+        private cdr: ChangeDetectorRef
+    ) {
+        // Subscribe to loading state and trigger change detection
+        this.loadingService.loading$
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(loading => {
+                this.loading = loading;
+                this.cdr.markForCheck(); // Trigger change detection
+            });
+    }
+
+    ngOnDestroy() {
+        this.destroy$.next();
+        this.destroy$.complete();
     }
 }

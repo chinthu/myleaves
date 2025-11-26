@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
@@ -102,7 +102,9 @@ export class UsersComponent implements OnInit, OnDestroy {
     private loadingService: LoadingService,
     private leaveService: LeaveService,
     private messageService: MessageService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
   ) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
     
@@ -248,6 +250,7 @@ export class UsersComponent implements OnInit, OnDestroy {
       } else {
         this.users = [];
       }
+      this.cdr.markForCheck(); // Trigger change detection after data is loaded
     } catch (error: any) {
       console.error('Error loading users:', error);
       this.messageService.add({ 
@@ -256,9 +259,11 @@ export class UsersComponent implements OnInit, OnDestroy {
         detail: error.message || 'Failed to load users' 
       });
       this.users = [];
+      this.cdr.markForCheck(); // Trigger change detection on error
     } finally {
       this.loading = false;
       this.loadingService.hide();
+      this.cdr.markForCheck(); // Ensure UI updates
     }
   }
 
@@ -361,13 +366,16 @@ export class UsersComponent implements OnInit, OnDestroy {
       }
 
       this.loadUsers();
+      this.cdr.markForCheck(); // Trigger change detection
       setTimeout(() => this.closeModal(), 2000);
 
     } catch (error: any) {
       console.error('Error saving user:', error);
       this.error = error.message || 'An error occurred';
+      this.cdr.markForCheck(); // Trigger change detection on error
     } finally {
       this.loading = false;
+      this.cdr.markForCheck(); // Ensure UI updates
     }
   }
 
@@ -390,10 +398,13 @@ export class UsersComponent implements OnInit, OnDestroy {
       }
       
       this.userLeaveStats = data || [];
+      this.cdr.markForCheck(); // Trigger change detection after data is loaded
     } catch (error: any) {
       this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message || 'Failed to load leave statistics.' });
+      this.cdr.markForCheck(); // Trigger change detection on error
     } finally {
       this.loadingStats = false;
+      this.cdr.markForCheck(); // Ensure UI updates
     }
   }
 
