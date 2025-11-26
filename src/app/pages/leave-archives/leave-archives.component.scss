@@ -1,0 +1,43 @@
+@import '../../../styles/_shared.scss';
+
+.archives-container {
+    padding: $spacing-xl;
+    max-width: 1400px;
+    margin: 0 auto;
+
+    .header {
+        h1 {
+            margin: 0 0 $spacing-xs 0;
+            color: $text-primary;
+        }
+        p {
+            margin: 0;
+            color: $text-secondary;
+        }
+    }
+
+    .badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: $radius-sm;
+        font-size: 0.75rem;
+        font-weight: $font-weight-semibold;
+        
+        &.badge-success {
+            background: rgba(72, 187, 120, 0.1);
+            color: #48bb78;
+        }
+        &.badge-warning {
+            background: rgba(237, 137, 54, 0.1);
+            color: #ed8936;
+        }
+        &.badge-danger {
+            background: rgba(245, 101, 101, 0.1);
+            color: #f56565;
+        }
+        &.badge-secondary {
+            background: rgba(107, 107, 107, 0.1);
+            color: #6B6B6B;
+        }
+    }
+}
+

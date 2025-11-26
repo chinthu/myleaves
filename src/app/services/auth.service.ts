@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
-import { createClient, SupabaseClient, User, Session } from '@supabase/supabase-js';
-import { environment } from '../../environments/environment';
+import { SupabaseClient, User, Session } from '@supabase/supabase-js';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { shareReplay, distinctUntilChanged } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { LoadingService } from './loading.service';
+import { SupabaseService } from './supabase.service';
 
 @Injectable({
   providedIn: 'root'
@@ -17,8 +17,13 @@ export class AuthService {
   // undefined = loading/not loaded, null = loaded but empty, Object = loaded
   private _userProfile = new BehaviorSubject<any>(undefined);
 
-  constructor(private router: Router, private loadingService: LoadingService) {
-    this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
+  constructor(
+    private router: Router, 
+    private loadingService: LoadingService,
+    private supabaseService: SupabaseService
+  ) {
+    // Use shared Supabase client instance instead of creating a new one
+    this.supabase = this.supabaseService.client;
 
     // Initialize user
     this.supabase.auth.getUser().then(({ data }) => {

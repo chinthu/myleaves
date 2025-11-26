@@ -63,6 +63,10 @@
                 routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">👤</span> Users
             </a>
+            <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'HR'" routerLink="/leave-archives"
+                routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
+                <span class="icon">📦</span> Leave Archives
+            </a>
             <a *ngIf="user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'" routerLink="/groups"
                 routerLinkActive="active" class="nav-item" (click)="sidebarOpen = false">
                 <span class="icon">🏢</span> Groups

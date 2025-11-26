@@ -58,6 +58,11 @@ export const routes: Routes = [
                 loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
                 canActivate: [authGuard]
             },
+            {
+                path: 'leave-archives',
+                loadComponent: () => import('./pages/leave-archives/leave-archives.component').then(m => m.LeaveArchivesComponent),
+                canActivate: [authGuard]
+            },
         ]
     },
     { path: '**', redirectTo: '' }

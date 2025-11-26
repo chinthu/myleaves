@@ -55,6 +55,72 @@
             </div>
         </p-card>
 
+        <!-- Carry Forward Settings Card (Available to Admin and Super Admin) -->
+        <p-card styleClass="settings-card" *ngIf="isAdmin || isSuperAdmin">
+            <div class="card-header">
+                <h2>Carry Forward Settings</h2>
+                <span class="badge-info">Admin & Super Admin Only</span>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <p-checkbox [(ngModel)]="settings.carry_forward_enabled" inputId="carryForward" 
+                        [binary]="true" [disabled]="true"></p-checkbox>
+                    <label for="carryForward" style="cursor: default; margin: 0;">
+                        <strong>Leave Carry Forward</strong>
+                        <span *ngIf="settings.carry_forward_enabled" style="color: #48bb78; margin-left: 0.5rem;">(Enabled)</span>
+                        <span *ngIf="!settings.carry_forward_enabled" style="color: #f56565; margin-left: 0.5rem;">(Disabled)</span>
+                    </label>
+                </div>
+                <small style="margin-left: 1.75rem; display: block; color: #6B6B6B;">
+                    If enabled, remaining casual leaves from previous year will be added to the new annual quota during year-end processing. 
+                    Medical leaves will always reset to default annual quota regardless of this setting. 
+                    If disabled, all users will start with only the default annual quota.
+                </small>
+            </div>
+
+            <div class="actions-footer">
+                <p-button 
+                    [label]="settings.carry_forward_enabled ? 'Disable Carry Forward' : 'Enable Carry Forward'" 
+                    [icon]="settings.carry_forward_enabled ? 'pi pi-times' : 'pi pi-check'" 
+                    styleClass="p-button-warning"
+                    (onClick)="toggleCarryForward()" 
+                    [loading]="loading">
+                </p-button>
+            </div>
+        </p-card>
+
+        <!-- Year-End Processing Card -->
+        <p-card styleClass="settings-card" *ngIf="canProcessYearEnd">
+            <div class="card-header">
+                <h2>Year-End Processing</h2>
+                <span class="badge-warning">Available in First Week of January</span>
+            </div>
+
+            <p>
+                <strong>Process Year-End for {{settings.year - 1}}:</strong> This will:
+            </p>
+            <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                <li>Archive all leaves from {{settings.year - 1}} (locked, non-editable)</li>
+                <li *ngIf="settings.carry_forward_enabled">
+                    Carry forward remaining casual leaves and add new annual quota (medical leaves will reset to default)
+                </li>
+                <li *ngIf="!settings.carry_forward_enabled">
+                    Reset all user balances to default annual quota only
+                </li>
+                <li>Medical leaves always reset to default annual quota</li>
+                <li>Create archive records for historical tracking</li>
+            </ul>
+            <p style="color: #ed8936; font-weight: 600; margin-top: 0.5rem;">
+                This action CANNOT be undone!
+            </p>
+
+            <div class="actions-footer">
+                <p-button label="Process Year-End & Reset Quota" icon="pi pi-calendar-check" styleClass="p-button-warning"
+                    (onClick)="processYearEnd()" [loading]="loading"></p-button>
+            </div>
+        </p-card>
+
         <!-- Bulk Actions Card -->
         <p-card styleClass="settings-card danger-zone">
             <div class="card-header">

@@ -5,8 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { LeaveService } from '../../services/leave.service';
 import { LoadingService } from '../../services/loading.service';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { environment } from '../../../environments/environment';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseService } from '../../services/supabase.service';
 
 import { TableModule } from 'primeng/table';
 import { CardModule } from 'primeng/card';
@@ -123,9 +123,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private supabaseService: SupabaseService
   ) {
-    this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
+    // Use shared Supabase client instance instead of creating a new one
+    this.supabase = this.supabaseService.client;
   }
 
   setupSubscriptions() {

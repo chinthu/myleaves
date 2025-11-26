@@ -13,6 +13,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { LoadingService } from '../../services/loading.service';
+import { CheckboxModule } from 'primeng/checkbox';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -27,7 +28,8 @@ import { takeUntil } from 'rxjs/operators';
     ButtonModule,
     InputNumberModule,
         NgSelectModule,
-    ConfirmDialogModule
+    ConfirmDialogModule,
+    CheckboxModule
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './leave-settings.component.html',
@@ -42,13 +44,20 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
   settings: any = {
     default_casual_leaves: 12,
     default_medical_leaves: 12,
-    year: new Date().getFullYear()
+    year: new Date().getFullYear(),
+    carry_forward_enabled: false,
+    year_end_processed: false
   };
+
+  // Year-end processing
+  isFirstWeekOfJanuary = false;
+  canProcessYearEnd = false;
 
   // Organization Management (Super Admin)
   organizations: any[] = [];
   selectedOrgId: string | null = null;
   isSuperAdmin = false;
+  isAdmin = false;
   private destroy$ = new Subject<void>();
 
   years = [
@@ -67,12 +76,15 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.checkIfFirstWeekOfJanuary();
+    
     this.authService.userProfile$
       .pipe(takeUntil(this.destroy$))
       .subscribe(async (userProfile) => {
         if (userProfile) {
           this.user = userProfile;
           this.isSuperAdmin = this.user.role === 'SUPER_ADMIN';
+          this.isAdmin = this.user.role === 'ADMIN';
 
           if (this.isSuperAdmin) {
             await this.loadOrganizations();
@@ -82,10 +94,57 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
           }
 
           if (this.selectedOrgId) {
-            this.loadSettings();
+            await this.loadSettings();
+            await this.loadCarryForwardSetting(); // Load carry-forward setting from previous year if in first week
+            await this.checkCanProcessYearEnd();
           }
         }
       });
+  }
+
+  checkIfFirstWeekOfJanuary() {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const janFirst = new Date(currentYear, 0, 1); // January 1st
+    const janEighth = new Date(currentYear, 0, 8); // January 8th
+    
+    // Check if current date is between Jan 1 and Jan 7 (first week)
+    this.isFirstWeekOfJanuary = now >= janFirst && now < janEighth;
+  }
+
+  async checkCanProcessYearEnd() {
+    if (!this.isFirstWeekOfJanuary || !this.selectedOrgId) {
+      this.canProcessYearEnd = false;
+      return;
+    }
+    
+    const previousYear = this.settings.year - 1;
+    
+    // Check if year-end processing has been done for the previous year
+    // Since settings are now one per organization, we check the archives table
+    // to see if any archives exist for the previous year
+    try {
+      const { data: archives, error } = await this.supabase
+        .from('leave_archives')
+        .select('id')
+        .eq('organization_id', this.selectedOrgId)
+        .eq('year', previousYear)
+        .limit(1);
+
+      // If archives exist for the previous year, year-end has been processed
+      // If no archives exist, year-end processing can be done
+      this.canProcessYearEnd = !archives || archives.length === 0;
+    } catch (error: any) {
+      console.error('Error checking year-end processing status:', error);
+      // On error, allow processing (safer to allow than block)
+      this.canProcessYearEnd = true;
+    }
+  }
+
+  async loadCarryForwardSetting() {
+    // Settings are now one per organization, so carry-forward is loaded with the main settings
+    // This method is kept for compatibility but the setting is already loaded in loadSettings()
+    // No separate call needed since settings are not year-specific anymore
   }
 
   async loadOrganizations() {
@@ -96,9 +155,9 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
     this.organizations = data || [];
   }
 
-  onOrgChange() {
+  async onOrgChange() {
     if (this.selectedOrgId) {
-      this.loadSettings();
+      await this.loadSettings();
     }
   }
 
@@ -109,7 +168,6 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
         .from('leave_settings')
         .select('*')
         .eq('organization_id', this.selectedOrgId)
-        .eq('year', this.settings.year)
         .single();
 
       if (error) {
@@ -126,18 +184,30 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
         this.settings = {
           default_casual_leaves: 12,
           default_medical_leaves: 12,
-          year: this.settings.year
+          year: new Date().getFullYear(), // Always use current year
+          carry_forward_enabled: false,
+          year_end_processed: false
         };
       } else if (data) {
-        this.settings = data;
+        // Settings are one per organization, but year should always be current year
+        // (year field is kept for reference but not used in unique constraint)
+        this.settings = {
+          ...data,
+          year: new Date().getFullYear() // Always use current year
+        };
       } else {
         // Reset to defaults if no record found
         this.settings = {
           default_casual_leaves: 12,
           default_medical_leaves: 12,
-          year: this.settings.year
+          year: new Date().getFullYear(), // Always use current year
+          carry_forward_enabled: false,
+          year_end_processed: false
         };
       }
+      
+      // Settings are now loaded (one per organization, not per year)
+      // Note: checkCanProcessYearEnd() is called separately after loadSettings() to avoid duplicate calls
     } catch (error: any) {
       console.error('Error loading settings:', error);
       if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
@@ -157,17 +227,17 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
     try {
       const payload = {
         organization_id: this.selectedOrgId,
-        year: this.settings.year,
         default_casual_leaves: this.settings.default_casual_leaves,
         default_medical_leaves: this.settings.default_medical_leaves
+        // Note: carry_forward_enabled is saved separately via toggleCarryForward()
+        // Note: year field is kept for reference but not used in unique constraint
       };
 
-      // Check if exists
+      // Check if exists (one per organization)
       const { data: existing } = await this.supabase
         .from('leave_settings')
         .select('id')
         .eq('organization_id', this.selectedOrgId)
-        .eq('year', this.settings.year)
         .single();
 
       let error;
@@ -304,6 +374,277 @@ export class LeaveSettingsComponent implements OnInit, OnDestroy {
         severity: 'error', 
         summary: 'Error', 
         detail: error.message || 'Failed to reset leaves and balances' 
+      });
+    } finally {
+      this.loading = false;
+      this.loadingService.hide();
+    }
+  }
+
+  async toggleCarryForward() {
+    if (!this.selectedOrgId) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Error',
+        detail: 'Please select an organization first.'
+      });
+      return;
+    }
+
+    // Only Admin and Super Admin can toggle carry-forward
+    if (!this.isAdmin && !this.isSuperAdmin) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Access Denied',
+        detail: 'Only Admin and Super Admin can enable/disable carry-forward.'
+      });
+      return;
+    }
+
+    const action = this.settings.carry_forward_enabled ? 'disable' : 'enable';
+    this.confirmationService.confirm({
+      message: `Are you sure you want to ${action} carry forward? This will affect how leaves are handled during year-end processing.`,
+      header: `${action === 'enable' ? 'Enable' : 'Disable'} Carry Forward`,
+      icon: 'pi pi-question-circle',
+      acceptButtonStyleClass: 'p-button-warning',
+      accept: async () => {
+        await this.saveCarryForwardSetting();
+        // Reload settings after saving
+        await this.loadSettings();
+      }
+    });
+  }
+
+  async saveCarryForwardSetting() {
+    if (!this.selectedOrgId) return;
+
+    this.loading = true;
+    try {
+      // Settings are now one per organization (not per year)
+      // Check if settings exist for this organization
+      const { data: existing } = await this.supabase
+        .from('leave_settings')
+        .select('id, default_casual_leaves, default_medical_leaves')
+        .eq('organization_id', this.selectedOrgId)
+        .single();
+
+      // Get default values from existing settings or use current settings
+      const defaultCasual = existing?.default_casual_leaves || this.settings.default_casual_leaves || 12;
+      const defaultMedical = existing?.default_medical_leaves || this.settings.default_medical_leaves || 12;
+
+      const newCarryForwardValue = !this.settings.carry_forward_enabled; // Toggle
+
+      let error;
+      if (existing) {
+        const { error: updateError } = await this.supabase
+          .from('leave_settings')
+          .update({ carry_forward_enabled: newCarryForwardValue })
+          .eq('id', existing.id);
+        error = updateError;
+      } else {
+        // If no settings exist, create new record
+        const payload = {
+          organization_id: this.selectedOrgId,
+          default_casual_leaves: defaultCasual,
+          default_medical_leaves: defaultMedical,
+          carry_forward_enabled: newCarryForwardValue
+        };
+        const { error: insertError } = await this.supabase
+          .from('leave_settings')
+          .insert(payload);
+        error = insertError;
+      }
+
+      if (error) throw error;
+
+      // Update the displayed setting
+      this.settings.carry_forward_enabled = newCarryForwardValue;
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: `Carry forward ${newCarryForwardValue ? 'enabled' : 'disabled'} successfully`
+      });
+    } catch (error: any) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: error.message || 'Failed to update carry forward setting'
+      });
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async processYearEnd() {
+    if (!this.selectedOrgId || !this.canProcessYearEnd) {
+      return;
+    }
+
+    // Settings are now one per organization, so use the current carry-forward setting
+    const previousYear = this.settings.year - 1;
+    const carryForwardEnabled = this.settings.carry_forward_enabled || false;
+
+    this.confirmationService.confirm({
+      message: `Are you sure you want to process year-end for ${previousYear}? This will:\n\n1. Archive all leaves from ${previousYear}\n2. ${carryForwardEnabled ? 'Carry forward remaining casual leaves and add new annual quota (medical leaves will reset to default)' : 'Reset to new annual quota only'}\n3. Lock all previous year's leaves (non-editable)\n\nThis action CANNOT be undone!`,
+      header: 'Process Year-End',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-warning',
+      accept: async () => {
+        await this.performYearEndProcessing(carryForwardEnabled);
+      }
+    });
+  }
+
+  async performYearEndProcessing(carryForwardEnabled: boolean = false) {
+    if (!this.selectedOrgId) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Please select an organization' });
+      return;
+    }
+
+    this.loading = true;
+    this.loadingService.show();
+
+    try {
+      const previousYear = this.settings.year - 1;
+      const currentYear = this.settings.year;
+      const startOfPreviousYear = `${previousYear}-01-01`;
+      const endOfPreviousYear = `${previousYear}-12-31`;
+
+      // Step 1: Get all users in the organization
+      const { data: users, error: usersError } = await this.supabase
+        .from('users')
+        .select('id, balance_casual, balance_medical, balance_compoff')
+        .eq('organization_id', this.selectedOrgId);
+
+      if (usersError) throw usersError;
+      if (!users || users.length === 0) {
+        this.messageService.add({ severity: 'warn', summary: 'No Users', detail: 'No users found in this organization' });
+        return;
+      }
+
+      // Step 2: For each user, archive their previous year's data
+      for (const user of users) {
+        // Get all leaves for the previous year
+        const { data: previousYearLeaves, error: leavesError } = await this.supabase
+          .from('leaves')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('start_date', startOfPreviousYear)
+          .lte('start_date', endOfPreviousYear);
+
+        if (leavesError) {
+          console.error(`Error fetching leaves for user ${user.id}:`, leavesError);
+          continue;
+        }
+
+        // Calculate statistics
+        const approvedLeaves = previousYearLeaves?.filter(l => l.status === 'APPROVED') || [];
+        const casualTaken = approvedLeaves.filter(l => l.type === 'CASUAL').reduce((sum, l) => sum + (l.days_count || 0), 0);
+        const medicalTaken = approvedLeaves.filter(l => l.type === 'MEDICAL').reduce((sum, l) => sum + (l.days_count || 0), 0);
+        const compOffTaken = approvedLeaves.filter(l => l.type === 'COMP_OFF').reduce((sum, l) => sum + (l.days_count || 0), 0);
+        const totalDaysTaken = approvedLeaves.reduce((sum, l) => sum + (l.days_count || 0), 0);
+
+        // Create archive record
+        const archiveData = {
+          user_id: user.id,
+          organization_id: this.selectedOrgId,
+          year: previousYear,
+          total_leaves_applied: previousYearLeaves?.length || 0,
+          total_leaves_approved: approvedLeaves.length,
+          total_leaves_pending: previousYearLeaves?.filter(l => l.status === 'PENDING').length || 0,
+          total_leaves_rejected: previousYearLeaves?.filter(l => l.status === 'REJECTED').length || 0,
+          total_leaves_cancelled: previousYearLeaves?.filter(l => l.status === 'CANCELLED').length || 0,
+          casual_leaves_taken: casualTaken,
+          medical_leaves_taken: medicalTaken,
+          comp_off_leaves_taken: compOffTaken,
+          total_days_taken: totalDaysTaken,
+          balance_casual_at_year_end: user.balance_casual || 0,
+          balance_medical_at_year_end: user.balance_medical || 0,
+          balance_compoff_at_year_end: user.balance_compoff || 0,
+          carry_forward_casual: this.settings.carry_forward_enabled ? (user.balance_casual || 0) : 0,
+          carry_forward_medical: 0 // Medical leaves are never carried forward
+        };
+
+        // Upsert archive (insert or update if exists)
+        const { error: archiveError } = await this.supabase
+          .from('leave_archives')
+          .upsert(archiveData, { onConflict: 'user_id,organization_id,year' });
+
+        if (archiveError) {
+          console.error(`Error archiving for user ${user.id}:`, archiveError);
+          continue;
+        }
+
+        // Step 3: Mark all previous year leaves as archived
+        if (previousYearLeaves && previousYearLeaves.length > 0) {
+          const leaveIds = previousYearLeaves.map(l => l.id);
+          const { error: archiveLeavesError } = await this.supabase
+            .from('leaves')
+            .update({ is_archived: true, archived_at: new Date().toISOString() })
+            .in('id', leaveIds);
+
+          if (archiveLeavesError) {
+            console.error(`Error archiving leaves for user ${user.id}:`, archiveLeavesError);
+          }
+        }
+
+        // Step 4: Update user balances for new year
+        const defaultCasual = this.settings.default_casual_leaves || 12;
+        const defaultMedical = this.settings.default_medical_leaves || 12;
+
+        let newCasualBalance = defaultCasual;
+        let newMedicalBalance = defaultMedical; // Medical always resets to default
+
+        if (this.settings.carry_forward_enabled) {
+          // Only carry forward casual leaves, medical always resets to default
+          newCasualBalance = defaultCasual + Math.max(0, user.balance_casual || 0);
+        }
+
+        const { error: updateError } = await this.supabase
+          .from('users')
+          .update({
+            balance_casual: newCasualBalance,
+            balance_medical: newMedicalBalance,
+            balance_compoff: 0 // Reset comp off at year end
+          })
+          .eq('id', user.id);
+
+        if (updateError) {
+          console.error(`Error updating user ${user.id}:`, updateError);
+        }
+      }
+
+      // Step 5: Mark year-end processing as complete
+      // Update the year_end_processed flag in settings (one per organization)
+      // Note: We still check archives to determine if a specific year has been processed
+      const { error: updateSettingsError } = await this.supabase
+        .from('leave_settings')
+        .update({
+          year_end_processed: true,
+          year_end_processed_at: new Date().toISOString()
+        })
+        .eq('organization_id', this.selectedOrgId);
+
+      if (updateSettingsError) {
+        console.error('Error updating year_end_processed flag:', updateSettingsError);
+        // Don't fail the whole operation if this update fails
+      }
+
+      // Reload settings and check if year-end processing can still be done
+      await this.loadSettings();
+      await this.checkCanProcessYearEnd();
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Year-End Processing Complete',
+        detail: `Successfully processed year-end for ${previousYear}. All leaves have been archived. ${this.settings.carry_forward_enabled ? 'Casual leaves have been carried forward and added to new annual quota. Medical leaves reset to default.' : 'All user balances have been reset to default annual quota.'}`
+      });
+    } catch (error: any) {
+      console.error('Year-end processing error:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: error.message || 'Failed to process year-end'
       });
     } finally {
       this.loading = false;

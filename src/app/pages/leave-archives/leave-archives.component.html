@@ -1,0 +1,108 @@
+<div class="archives-container">
+    <p-toast></p-toast>
+
+    <div class="header mb-4">
+        <h1>Leave Archives</h1>
+        <p>View historical leave records from previous years</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="flex gap-3 align-items-center flex-wrap">
+            <div class="flex flex-column gap-2" *ngIf="isSuperAdmin">
+                <label class="font-bold text-900">Organization</label>
+                <ng-select [items]="organizations" [(ngModel)]="selectedOrgId" bindLabel="name"
+                    bindValue="id" (change)="onOrgChange()" placeholder="Select Organization"
+                    [style]="{width: '15rem'}" [clearable]="false" appendTo="body"></ng-select>
+            </div>
+            
+            <div class="flex flex-column gap-2">
+                <label class="font-bold text-900">Year</label>
+                <ng-select [items]="availableYears" [(ngModel)]="selectedYear" bindLabel="label"
+                    bindValue="value" (change)="onYearChange()" placeholder="Select Year"
+                    [style]="{width: '10rem'}" [clearable]="false" appendTo="body"></ng-select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Archive Records Table -->
+    <div class="card">
+        <p-table [value]="filteredArchives" [loading]="loading" [rows]="20" [paginator]="true" 
+            responsiveLayout="scroll" [globalFilterFields]="['users.full_name', 'users.email']">
+            <ng-template pTemplate="caption">
+                <div class="flex justify-content-between align-items-center">
+                    <span class="text-lg font-bold">Archive Records for {{selectedYear}}</span>
+                    <span class="p-input-icon-left">
+                        <i class="pi pi-search"></i>
+                        <input pInputText type="text" (input)="onGlobalFilter($event)" 
+                            placeholder="Search by name or email" />
+                    </span>
+                </div>
+            </ng-template>
+            
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Employee</th>
+                    <th>Total Applied</th>
+                    <th>Approved</th>
+                    <th>Pending</th>
+                    <th>Rejected</th>
+                    <th>Cancelled</th>
+                    <th>Casual Taken</th>
+                    <th>Medical Taken</th>
+                    <th>Comp Off Taken</th>
+                    <th>Total Days Taken</th>
+                    <th>Balance at Year End</th>
+                    <th>Carry Forward</th>
+                </tr>
+            </ng-template>
+            
+            <ng-template pTemplate="body" let-archive>
+                <tr>
+                    <td>
+                        <div>
+                            <div class="font-medium">{{archive.users?.full_name || archive.users?.email || 'Unknown'}}</div>
+                            <div class="text-sm text-500">{{archive.users?.email}}</div>
+                            <div class="text-sm text-500" *ngIf="archive.users?.designation">{{archive.users.designation}}</div>
+                        </div>
+                    </td>
+                    <td>{{archive.total_leaves_applied || 0}}</td>
+                    <td><span class="badge badge-success">{{archive.total_leaves_approved || 0}}</span></td>
+                    <td><span class="badge badge-warning">{{archive.total_leaves_pending || 0}}</span></td>
+                    <td><span class="badge badge-danger">{{archive.total_leaves_rejected || 0}}</span></td>
+                    <td><span class="badge badge-secondary">{{archive.total_leaves_cancelled || 0}}</span></td>
+                    <td>{{archive.casual_leaves_taken || 0}} days</td>
+                    <td>{{archive.medical_leaves_taken || 0}} days</td>
+                    <td>{{archive.comp_off_leaves_taken || 0}} days</td>
+                    <td class="font-bold">{{archive.total_days_taken || 0}} days</td>
+                    <td>
+                        <div class="text-sm">
+                            <div>CL: {{archive.balance_casual_at_year_end || 0}}</div>
+                            <div>ML: {{archive.balance_medical_at_year_end || 0}}</div>
+                            <div>CO: {{archive.balance_compoff_at_year_end || 0}}</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="text-sm" *ngIf="archive.carry_forward_casual > 0 || archive.carry_forward_medical > 0">
+                            <div>CL: {{archive.carry_forward_casual || 0}}</div>
+                            <div>ML: {{archive.carry_forward_medical || 0}}</div>
+                        </div>
+                        <span class="text-muted" *ngIf="archive.carry_forward_casual === 0 && archive.carry_forward_medical === 0">-</span>
+                    </td>
+                </tr>
+            </ng-template>
+            
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="12" class="text-center p-4">
+                        <div class="flex flex-column align-items-center gap-2">
+                            <i class="pi pi-inbox text-4xl text-300"></i>
+                            <p class="text-muted">No archive records found for {{selectedYear}}</p>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
+</div>
+

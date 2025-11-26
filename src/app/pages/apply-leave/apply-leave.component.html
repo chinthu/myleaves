@@ -48,11 +48,16 @@
             </div>
 
             <!-- Date Selection -->
+            <div class="p-3 bg-yellow-50 border-round text-yellow-800 mb-3" style="border-left: 4px solid #ed8936;">
+                <i class="pi pi-info-circle mr-2"></i>
+                <strong>Note:</strong> Leave can only be applied for dates starting from {{minDate | date:'MMM d, y'}} (one month before today). Dates before this cannot be selected.
+            </div>
+            
             <div *ngIf="duration === 'HALF_DAY'" class="grid formgrid">
                 <div class="col-12 md:col-6 flex flex-column gap-2">
                     <label class="font-bold text-900">Select Date</label>
                     <p-calendar [(ngModel)]="halfDayDate" name="halfDayDate" [showIcon]="true" dataType="string"
-                        dateFormat="yy-mm-dd" styleClass="w-full" inputStyleClass="w-full"></p-calendar>
+                        dateFormat="yy-mm-dd" [minDate]="minDate" styleClass="w-full" inputStyleClass="w-full"></p-calendar>
                 </div>
                 <div class="col-12 md:col-6 flex flex-column gap-2">
                     <label class="font-bold text-900">Select Slot</label>
@@ -67,20 +72,20 @@
             <div *ngIf="duration === 'FULL_DAY'" class="flex flex-column gap-2">
                 <label class="font-bold text-900">Select Date</label>
                 <p-calendar [(ngModel)]="startDate" name="startDate" [showIcon]="true" (onSelect)="calculateDays()"
-                    dataType="string" dateFormat="yy-mm-dd" styleClass="w-full" inputStyleClass="w-full"></p-calendar>
+                    dataType="string" dateFormat="yy-mm-dd" [minDate]="minDate" styleClass="w-full" inputStyleClass="w-full"></p-calendar>
             </div>
 
             <div *ngIf="duration === 'LONG_LEAVE'" class="grid formgrid">
                 <div class="col-12 md:col-6 flex flex-column gap-2">
                     <label class="font-bold text-900">Start Date</label>
                     <p-calendar [(ngModel)]="startDate" name="startDate" [showIcon]="true" (onSelect)="calculateDays()"
-                        dataType="string" dateFormat="yy-mm-dd" styleClass="w-full"
+                        dataType="string" dateFormat="yy-mm-dd" [minDate]="minDate" styleClass="w-full"
                         inputStyleClass="w-full"></p-calendar>
                 </div>
                 <div class="col-12 md:col-6 flex flex-column gap-2">
                     <label class="font-bold text-900">End Date</label>
                     <p-calendar [(ngModel)]="endDate" name="endDate" [showIcon]="true" (onSelect)="calculateDays()"
-                        dataType="string" dateFormat="yy-mm-dd" styleClass="w-full"
+                        dataType="string" dateFormat="yy-mm-dd" [minDate]="getMinDateForEndDate()" styleClass="w-full"
                         inputStyleClass="w-full"></p-calendar>
                 </div>
             </div>

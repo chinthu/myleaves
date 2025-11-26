@@ -42,6 +42,7 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
 
   // Calculated
   daysCount: number = 0;
+  minDate: Date = new Date(); // Minimum date: one month before today
 
   // UI State
   loading: boolean = false;
@@ -59,6 +60,14 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // Set minimum date to one month before today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const oneMonthBefore = new Date(today);
+    oneMonthBefore.setMonth(today.getMonth() - 1);
+    oneMonthBefore.setHours(0, 0, 0, 0);
+    this.minDate = oneMonthBefore;
+
     this.authService.userProfile$
       .pipe(takeUntil(this.destroy$))
       .subscribe((userProfile) => {
@@ -90,12 +99,36 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
     if (this.startDate && this.endDate) {
       const start = new Date(this.startDate);
       const end = new Date(this.endDate);
+      
+      // Validate end date is not before start date
+      if (end < start) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Invalid Date Range',
+          detail: 'End date cannot be before start date.'
+        });
+        this.endDate = '';
+        this.daysCount = 0;
+        return;
+      }
+      
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
       this.daysCount = diffDays > 0 ? diffDays : 0;
     } else {
       this.daysCount = 0;
     }
+  }
+
+  getMinDateForEndDate(): Date | null {
+    // For end date in long leave, it should be at least the start date
+    if (this.duration === 'LONG_LEAVE' && this.startDate) {
+      const start = new Date(this.startDate);
+      start.setHours(0, 0, 0, 0);
+      // Return the later of: start date or one month before today
+      return start > this.minDate ? start : this.minDate;
+    }
+    return this.minDate;
   }
 
   async submitLeave() {
@@ -114,6 +147,42 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
       }
       if (!this.selectedGroupId) {
         throw new Error('Please select an approval group.');
+      }
+
+      // Validate dates are at least one month before today (can't select dates older than one month)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const oneMonthBefore = new Date(today);
+      oneMonthBefore.setMonth(today.getMonth() - 1);
+      oneMonthBefore.setHours(0, 0, 0, 0);
+
+      // Validate start date (or half day date)
+      let startDateToValidate: Date | null = null;
+      if (this.duration === 'HALF_DAY' && this.halfDayDate) {
+        startDateToValidate = new Date(this.halfDayDate);
+      } else if ((this.duration === 'FULL_DAY' || this.duration === 'LONG_LEAVE') && this.startDate) {
+        startDateToValidate = new Date(this.startDate);
+      }
+
+      if (startDateToValidate) {
+        startDateToValidate.setHours(0, 0, 0, 0);
+        if (startDateToValidate < oneMonthBefore) {
+          const minDateStr = oneMonthBefore.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+          throw new Error(`Leave can only be applied for dates starting from ${minDateStr} (one month before today). Dates before this cannot be selected.`);
+        }
+      }
+
+      // Validate end date for long leave
+      if (this.duration === 'LONG_LEAVE' && this.endDate) {
+        const endDateToValidate = new Date(this.endDate);
+        endDateToValidate.setHours(0, 0, 0, 0);
+        if (endDateToValidate < oneMonthBefore) {
+          const minDateStr = oneMonthBefore.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+          throw new Error(`End date must be at least ${minDateStr} (one month before today).`);
+        }
+        if (startDateToValidate && endDateToValidate < startDateToValidate) {
+          throw new Error('End date cannot be before start date.');
+        }
       }
 
       // Prepare Payload

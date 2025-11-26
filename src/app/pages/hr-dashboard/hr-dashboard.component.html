@@ -100,7 +100,7 @@
         </div>
 
         <div class="chart-card full-width">
-            <h3>Leave Trend (Last 6 Months)</h3>
+            <h3>Leave Trend (Last 6 Months of {{selectedYear}})</h3>
             <p-chart type="line" [data]="leaveTrendChart" [options]="chartOptions"></p-chart>
         </div>
     </div>
@@ -110,13 +110,15 @@
         <div class="section-header">
             <h2>All Leave Applications</h2>
             <div class="filters-group">
-                <p-calendar [(ngModel)]="dateRange" selectionMode="range" [readonlyInput]="true"
-                    placeholder="Date Range" (onSelect)="onFilterChange()"></p-calendar>
+                <ng-select [items]="availableYears" [(ngModel)]="selectedYear" bindLabel="label"
+                    bindValue="value" (change)="onYearChange()" placeholder="Select Year" 
+                    [style]="{width: '150px'}" [clearable]="false" appendTo="body"></ng-select>
 
                 <ng-select [items]="statusOptions" [(ngModel)]="selectedStatus" bindLabel="label"
-                    bindValue="value" (change)="onFilterChange()" placeholder="Status"></ng-select>
+                    bindValue="value" (change)="onFilterChange()" placeholder="Status" 
+                    [style]="{width: '150px'}" [clearable]="true" appendTo="body"></ng-select>
 
-                <p-button label="Clear" icon="pi pi-filter-slash" styleClass="p-button-outlined"
+                <p-button label="Clear Filters" icon="pi pi-filter-slash" styleClass="p-button-outlined"
                     (onClick)="clearFilters()"></p-button>
             </div>
         </div>

@@ -66,7 +66,8 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
   lowBalanceUsers = 0;
 
   // Filters
-  dateRange: Date[] = [];
+  selectedYear: number = new Date().getFullYear();
+  availableYears: any[] = [];
   selectedStatus: string = 'ALL';
   statusOptions = [
     { label: 'All', value: 'ALL' },
@@ -119,6 +120,15 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // Generate available years (current year and 2 years back)
+    const currentYear = new Date().getFullYear();
+    this.availableYears = [
+      { label: currentYear.toString(), value: currentYear },
+      { label: (currentYear - 1).toString(), value: currentYear - 1 },
+      { label: (currentYear - 2).toString(), value: currentYear - 2 }
+    ];
+    this.selectedYear = currentYear;
+
     this.authService.userProfile$
       .pipe(takeUntil(this.destroy$))
       .subscribe(async (userProfile) => {
@@ -172,10 +182,15 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
   }
 
   async loadAllLeaves() {
-    // Load all leaves for accurate chart data (especially for top users chart)
+    // Load leaves filtered by selected year for accurate chart data
+    const startOfYear = `${this.selectedYear}-01-01`;
+    const endOfYear = `${this.selectedYear}-12-31`;
+    
     const { data } = await this.supabase
       .from('leaves')
       .select('*, users:user_id(full_name, email)')
+      .gte('start_date', startOfYear)
+      .lte('start_date', endOfYear)
       .order('created_at', { ascending: false });
 
     this.allLeaves = data || [];
@@ -465,15 +480,17 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
 
   getLast6MonthsData() {
     const months = [];
-    const now = new Date();
+    const selectedYear = this.selectedYear;
 
+    // Get last 6 months of the selected year (July to December)
     for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const date = new Date(selectedYear, 11 - i, 1); // Start from December and go back
       const monthName = date.toLocaleString('default', { month: 'short' });
       const year = date.getFullYear();
       const startDate = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
       const endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
 
+      // Count leaves in this month for the selected year
       const count = this.allLeaves.filter(l =>
         l.start_date >= startDate &&
         l.start_date <= endDate &&
@@ -494,12 +511,8 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
       filtered = filtered.filter(l => l.status === this.selectedStatus);
     }
 
-    // Date range filter
-    if (this.dateRange && this.dateRange.length === 2 && this.dateRange[0] && this.dateRange[1]) {
-      const start = this.dateRange[0].toISOString().split('T')[0];
-      const end = this.dateRange[1].toISOString().split('T')[0];
-      filtered = filtered.filter(l => l.start_date >= start && l.start_date <= end);
-    }
+    // Year filter is already applied in loadAllLeaves, but we can add additional filtering here if needed
+    // All leaves in allLeaves are already filtered by selectedYear
 
     this.filteredLeaves = filtered;
   }
@@ -508,9 +521,15 @@ export class HrDashboardComponent implements OnInit, OnDestroy {
     this.applyFilters();
   }
 
+  async onYearChange() {
+    // Reload data when year changes
+    await this.loadAllLeaves();
+    this.setupCharts();
+  }
+
   clearFilters() {
     this.selectedStatus = 'ALL';
-    this.dateRange = [];
+    // Year remains the same, only clear status filter
     this.applyFilters();
   }
 
